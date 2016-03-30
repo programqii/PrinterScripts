@@ -1,0 +1,8 @@
+*.pyc
+*.o
+*.apk
+.DS_Store
+thumbs.db
+*.exe
+*.temp
+
