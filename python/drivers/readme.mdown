@@ -1,0 +1,32 @@
+## Basic description of scripts/Files
+
+* Printer3DLib.py - Python Library built of of code that could be easily re-usable
+* 3dPrinter_console.py - Python Application that allows you to Direcly enter G-Code into the printer
+* 3dPrinter_reset.py - Python Application that "resets" the printer (Ex: Set's temps to 0, shuts off stepper motors, etc.)
+* 3dPrinter.py - "Streams" G-Code to printer Via a Serial Port (Note: the USB connection on a Ardrino Board is identified as "serial port")
+* print_server.py - A simple HTTP based Endpoint or sending G-Code to the Printer
+
+
+
+
+## More Detail...
+### 3dprinter.py
+
+*Usage:* pyhton 3dprinter.py port='/dev/ttyACM0' baud=115200 file=./myFileToPrint.gcode
+* port (Default: '/dev/ttyACM0') - the Serial port device file to use ('/dev/ttyACM0' is what the board usually ends up bing on the Raspberry-PI) 
+* baud (Default: 115200) - the connection speed to used when connecting (Note: I had to change the firmware on my printer from 200000 -> 115200 since "200000" is not standard)
+* file (required) - the file to stream to the printer
+
+the program will Show all Data being sent to and recieved from the printer (It's also shows comments in the g-code file, but those are stripped out before being sent to the printer)
+
+### print_server.py
+Basic WIP Server for Manipulating the printer, it can recieve raw G-code and send it to the printer.
+
+it only has one *real* endpont
+
+# POST "/sendRawCommand"
+*Post Body:* ```{"command":"Your Gcode Command Here"}```
+*Response Body:* ```{"data":["response Lines/data Here(if any)"]}```
+
+*Note:* The enpoint will not return until the Printer Has Acknologed the command (Ex: "Wait until Temp reached" will not return with a response unitl the temprature is reached)
+
