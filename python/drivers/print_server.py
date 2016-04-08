@@ -3,15 +3,13 @@ from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 from os import curdir, sep
 from lib3dPrinter import MarlinPrinterProtocol, GcodeCommandBuffer
 from libComms import ComPortWrapper, MockComPortWrapper
-from libUtils import ArgsParse, printerFromArgs
+from libUtils import *
 from libLogging import buildLogger
 import re
 import socket
 
 args = ArgsParse();
 
-baud = args.getValue("baud", 115200);
-port = args.getValue("port", '/dev/ttyACM0');
 PORT_NUMBER = int(args.getValue("http_port", 8081));
 
 apiHandler = RequestHandler(basePath="");
@@ -101,22 +99,22 @@ def getSpoolInfo(method, url, body, headers, matchObject):
 def deleteSpoolInfo(method, url, body, headers, matchObject):
 	return ApiResponse();
 
-# Info around the places to buy flament and the genreal information about the filament itself
-@apiHandler.endpoint("GET", "/api/spoolManufacturers")
-def getFilamentDealers(method, url, body, headers, matchObject):
-	return ApiResponse();
-@apiHandler.endpoint("POST", "/api/spoolManufacturers/new")
-def addFilamentDealer(method, url, body, headers, matchObject):
-	return ApiResponse();
-@apiHandler.endpoint("GET", "/api/spoolManufacturer/{id}")
-def getFilamentDealerInfo(method, url, body, headers, matchObject):
-	return ApiResponse();
-@apiHandler.endpoint("POST", "/api/spoolManufacturer/{id}")
-def updateFilamentDealerInfo(method, url, body, headers, matchObject):
-	return ApiResponse();
-@apiHandler.endpoint("DELETE", "/api/spoolManufacturer/{id}")
-def deleteFilamentDealerInfo(method, url, body, headers, matchObject):
-	return ApiResponse();
+# # Info around the places to buy flament and the genreal information about the filament itself
+# @apiHandler.endpoint("GET", "/api/spoolManufacturers")
+# def getFilamentDealers(method, url, body, headers, matchObject):
+# 	return ApiResponse();
+# @apiHandler.endpoint("POST", "/api/spoolManufacturers/new")
+# def addFilamentDealer(method, url, body, headers, matchObject):
+# 	return ApiResponse();
+# @apiHandler.endpoint("GET", "/api/spoolManufacturer/{id}")
+# def getFilamentDealerInfo(method, url, body, headers, matchObject):
+# 	return ApiResponse();
+# @apiHandler.endpoint("POST", "/api/spoolManufacturer/{id}")
+# def updateFilamentDealerInfo(method, url, body, headers, matchObject):
+# 	return ApiResponse();
+# @apiHandler.endpoint("DELETE", "/api/spoolManufacturer/{id}")
+# def deleteFilamentDealerInfo(method, url, body, headers, matchObject):
+# 	return ApiResponse();
 
 # Info About the Specific Printers (Connetions, Jobs being executed, Current Material, etc.)
 @apiHandler.endpoint("GET", "/api/printers")

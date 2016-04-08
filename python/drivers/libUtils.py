@@ -88,10 +88,43 @@ def parseWithTypes(jsonNode, *args, defaultValue=None):
 
 # Structure & function for registering json "types" that have toJson & fromJson defined
 __ClassNames = {};
-def JsonType(typeName=None):
+def JsonType(typeName=None, saveThese=None):			
 	def handleClassDef(classDef):
+		# Dynamically add toJson/fromJson 
+		if saveThese != None:
+			if isinstance(saveThese, list):
+				def toJson(self):
+					ret = {};
+					for i in saveThese:
+						ret[i] = toJsonMap(getattr(self, i));
+					return ret;
+				@staticmethod
+				def fromJson(jsonNode):
+					ret = classDef();
+					for i in saveThese:
+						if i in jsonNode:
+							setattr(ret, i, fromJsonMap(jsonNode[i]));
+					return ret;
+				classDef.toJson = toJson;
+				setattr(classDef, "fromJson", fromJson);
+			elif isinstance(saveThese, dict):
+				def toJson(self):
+					ret = {};
+					for i in saveThese:
+						ret[saveThese[i]] = getattr(self, i);
+					return ret;
+				@staticmethod
+				def fromJson(jsonNode):
+					ret = classDef();
+					for i in saveThese:
+						if saveThese[i] in jsonNode:
+							setattr(ret, i, fromJsonMap(jsonNode[saveThese[i]]));
+					return ret;
+				setattr(classDef, "fromJson", fromJson);
+				classDef.toJson = toJson;
 		__ClassNames[typeName or classDef.__name__] = classDef;
 	return handleClassDef;
+
 # Recursivly parse Json Structure
 def fromJsonMap(m):
 	if isinstance(m, list):
