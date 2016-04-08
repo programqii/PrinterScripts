@@ -1,54 +1,37 @@
 import serial
 import sys
+import json
+import datetime
+from libUtils import mapPath, parseWithTypes, JsonType, fromJson, toJson
+from libLogging import buildLogger
+from libComms import parseCommPort
 
-class ArgsParse:
-	def  __init__(self):
-		self.argMap = {}
-		self.flags = [];
-		offset = 0;
-		for i in sys.argv[1:]:
-			offset = i.find("=");
-			if offset > -1:
-				self.argMap[i[:offset].lower()] = i[offset+1:];
-			else:
-				self.flags += [i.lower()];
-	def hasFlag(self, flagName):
-		for i in self.flags:
-			if i == flagName.lower():
-				return True;
-		return False;
-	def getValue(self, name, defaultValue):
-		if( name.lower() in self.argMap):
-			return self.argMap[name.lower()]
-		return defaultValue;
-class Logger:
-	def __init__(self, tag):
-		self.tag = tag;
-	def log(self, message):
-		print(self.tag + ": " + message);
-class PrinterProtocol:
-	def __init__(self, port='/dev/ttyACM0', baud=115200, timeout=0.5, logger=Logger("PrinterProtocol")):
-		self.mPort = port;
-		self.mBaud = baud;
-		self.mTimeout = timeout;
-		self.ser = None;
+def parsePrinterProtocol(jsonNode):
+	return parseWithTypes(jsonNode, MarlinPrinterProtocol);
+# Sends G-Code & recieves / Interprets Reponses
+@JsonType
+class MarlinPrinterProtocol:
+	def __init__(self, commPort):
+		self.mCommPort = commPort;
 		self.errors = [];
-		self.logger = logger;
+		self.logger = buildLogger("lib3dPrinter.py->MarlinPrinterProtocol");
 	def open(self):
-		self.ser = serial.Serial(self.mPort, self.mBaud, timeout=self.mTimeout);
+		self.mCommPort.open();
 		self.printResponse();
 	def close(self):
-		if self.ser != None:
-			self.ser.close();
+		self.mCommPort.close();
 	def printResponse(self):
+		lines = [];
 		while True:
-			s = self.ser.readline();
+			s = self.mCommPort.readline();
 			if s == '':
 				break;
+			lines += [s];
 			self.logger.log("From Printer: " + s[:-1]);
+			return lines;
 	def readUntilOkOrError(self):
 		while True:
-			s = self.ser.readline();
+			s = self.mCommPort.readline();
 			if s.find(":") > -1:
 				tag = s[:s.find(":")];
 			else:
@@ -62,7 +45,7 @@ class PrinterProtocol:
 	def readUntilOkOrError(self):
 		lines = [];
 		while True:
-			s = self.ser.readline();
+			s = self.mCommPort.readline();
 			if s.find(":") > -1:
 				tag = s[:s.find(":")];
 			else:
@@ -75,18 +58,32 @@ class PrinterProtocol:
 			if tag.lower() == "error":
 				return {"ok": False, "data": lines};
 	def sendCmd(self, cmd):
-		self.logger.log("Sending Command: " + cmd);
-		self.ser.write(cmd + "\n");
+		self.logger.logVerbose("Sending Command: " + cmd);
+		self.mCommPort.write(cmd + "\n");
 		return self.readUntilOkOrError();
 	def emergencyStop(self):
+		self.logger.log("Sending E-Stop Commands");
 		self.sendCmd("M18");
 		self.sendCmd("M140 S0");
 		self.sendCmd("M104 S0");
 		self.sendCmd("M81");
+	def toJson(self):
+		return {mCommPort=toJson(self.mCommPort));
+	@staticmethod
+	def fromJson(jsonNode):
+		# commPort = None;
+		# commPort = commPort if commPort != None else ComPortWrapper.fromJson(mapPath(jsonNode, "commPort"));
+		return MarlinPrinterProtocol(
+			commPort=fromJson(jsonNode["mCommPort"]);
+			);
+def parseGcodeBuffer(jsonNode):
+	return parseWithTypes(jsonNode, GcodeCommandBuffer);
+@JsonType
 class GcodeCommandBuffer:
-	def __init__(self, filePath):
+	def __init__(self, filePath, startAtCmd=0):
 		self.mLines = [];
-		self.mNextCommand = 0;
+		self.mNextCommand = startAtCmd;
+		self.mFilePath = filePath;
 		f = open(filePath);
 		l = f.readline();
 		lineCounter = 1;
@@ -112,5 +109,12 @@ class GcodeCommandBuffer:
 		return (1.0*self.mNextCommand) / len(self.mLines);
 	def numCommandsLeft(self):
 		return len(self.mLines) - self.mNextCommand;
-
+	def toJson(self):
+		return { filePath=self.mFilePath, nextCommand=self.mNextCommand };
+	@staticmethod
+	def fromJson(jsonNode):
+		return GcodeCommandBuffer(
+			filePath=mapPath(jsonNode, "filePath"),
+			startAtCmd=mapPath(jsonNode, "nextCommand", 0)
+			);
 
