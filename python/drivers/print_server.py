@@ -6,6 +6,8 @@ args = ArgsParse();
 
 baud = args.getValue("baud", 115200);
 port = args.getValue("port", '/dev/ttyACM0');
+#port = args.getValue("port", '/dev/tty.usbmodem1411'); //mac serial port
+
 PORT_NUMBER = int(args.getValue("http_port", 8081));
 
 
@@ -56,7 +58,7 @@ class myHandler(BaseHTTPRequestHandler):
 	def do_POST(self):
 		if self.path=="/sendRawCommand":
 			data = json.loads(self.rfile.read(int(self.headers['content-length'])));
-			cmdRes = printer.sendCmd(data["command"]);
+			cmdRes = printer.sendCmd(data["command"].encode('ascii'));
 			res = {"data":cmdRes["data"]};
 			self.send_response(200 if cmdRes["ok"] else 500);
 			self.end_headers()
