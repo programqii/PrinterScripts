@@ -8,6 +8,60 @@ from libLogging import buildLogger
 
 logger = buildLogger("libUtils.py");
 
+# Structure & function for registering json "types" that have toJson & fromJson defined
+__ClassNames = {};
+def JsonType(typeName=None, saveThese=None):			
+	def handleClassDef(classDef):
+		# Dynamically add toJson/fromJson 
+		if saveThese != None:
+			if isinstance(saveThese, list):
+				def toJson(self):
+					ret = {};
+					for i in saveThese:
+						ret[i] = toJsonMap(getattr(self, i));
+					return ret;
+				def updateFromJson(self, jsonNode, blackList=[], whiteList=None):
+					if whiteList == None:
+						whiteList = saveThese;
+					for i in saveThese:
+						if (i in jsonNode) and (i in whiteList) and (not (i in blackList)):
+							setattr(self, i, fromJsonMap(jsonNode[i]));
+				@staticmethod
+				def fromJson(jsonNode):
+					ret = classDef();
+					for i in saveThese:
+						if i in jsonNode:
+							setattr(ret, i, fromJsonMap(jsonNode[i]));
+					return ret;
+				setattr(classDef, "fromJson", fromJson);
+				classDef.toJson = toJson;
+				classDef.updateFromJson = updateFromJson;
+			elif isinstance(saveThese, dict):
+				def toJson(self):
+					ret = {};
+					for i in saveThese:
+						ret[saveThese[i]] = getattr(self, i);
+					return ret;
+				def updateFromJson(self, jsonNode, blackList=[], whiteList=None):
+					if whiteList == None:
+						whiteList = saveThese;
+					for i in saveThese:
+						if (i in jsonNode) and (i in whiteList) and (not (i in blackList)):
+							setattr(self, i, fromJsonMap(jsonNode[saveThese[i]]));
+				@staticmethod
+				def fromJson(jsonNode):
+					ret = classDef();
+					for i in saveThese:
+						if saveThese[i] in jsonNode:
+							setattr(ret, i, fromJsonMap(jsonNode[saveThese[i]]));
+					return ret;
+				setattr(classDef, "fromJson", fromJson);
+				classDef.toJson = toJson;
+				classDef.updateFromJson = updateFromJson;
+		__ClassNames[typeName or classDef.__name__] = classDef;
+	return handleClassDef;
+
+#Python Compat
 def rawUserInput(prompt):
 	if (sys.version_info > (3, 0)):
 		# Python 3 code in this block
@@ -16,7 +70,7 @@ def rawUserInput(prompt):
 		# Python 2 code in this block
 		return raw_input(prompt)
 
-@JsonType("ArgumentList")
+@JsonType(typeName="ArgumentList", saveThese=["argMap", "flags"] )
 class ArgsParse:
 	def  __init__(self, argv=None):
 		self.argMap = {}
@@ -38,14 +92,14 @@ class ArgsParse:
 		if( name.lower() in self.argMap):
 			return self.argMap[name.lower()]
 		return defaultValue;
-	@staticmethod
-	def fromJson(jsonNode):
-		ret = ArgsParse(argv=[]);
-		ret.argMap = mapPath(jsonNode, "argMap", {});
-		ret.flags = mapPath(jsonNode, "flags", []);
-		return ret;
-	def toJson(self):
-		return {argMap=self.argMap, flags=self.flags};
+	# @staticmethod
+	# def fromJson(jsonNode):
+	# 	ret = ArgsParse(argv=[]);
+	# 	ret.argMap = mapPath(jsonNode, "argMap", {});
+	# 	ret.flags = mapPath(jsonNode, "flags", []);
+	# 	return ret;
+	# def toJson(self):
+	# 	return {"argMap":self.argMap, "flags": self.flags};
 
 def printerFromArgs(args): #Note "args" is an instance of ArgsParse
 	global logger;
@@ -86,45 +140,6 @@ def parseWithTypes(jsonNode, *args, defaultValue=None):
 			return r;
 	return defaultValue;
 
-# Structure & function for registering json "types" that have toJson & fromJson defined
-__ClassNames = {};
-def JsonType(typeName=None, saveThese=None):			
-	def handleClassDef(classDef):
-		# Dynamically add toJson/fromJson 
-		if saveThese != None:
-			if isinstance(saveThese, list):
-				def toJson(self):
-					ret = {};
-					for i in saveThese:
-						ret[i] = toJsonMap(getattr(self, i));
-					return ret;
-				@staticmethod
-				def fromJson(jsonNode):
-					ret = classDef();
-					for i in saveThese:
-						if i in jsonNode:
-							setattr(ret, i, fromJsonMap(jsonNode[i]));
-					return ret;
-				classDef.toJson = toJson;
-				setattr(classDef, "fromJson", fromJson);
-			elif isinstance(saveThese, dict):
-				def toJson(self):
-					ret = {};
-					for i in saveThese:
-						ret[saveThese[i]] = getattr(self, i);
-					return ret;
-				@staticmethod
-				def fromJson(jsonNode):
-					ret = classDef();
-					for i in saveThese:
-						if saveThese[i] in jsonNode:
-							setattr(ret, i, fromJsonMap(jsonNode[saveThese[i]]));
-					return ret;
-				setattr(classDef, "fromJson", fromJson);
-				classDef.toJson = toJson;
-		__ClassNames[typeName or classDef.__name__] = classDef;
-	return handleClassDef;
-
 # Recursivly parse Json Structure
 def fromJsonMap(m):
 	if isinstance(m, list):
@@ -160,3 +175,29 @@ def toJsonMap(m):
 		return r;
 	else:
 		return m;
+def toJsonString(m):
+	return json.dumps(toJsonMap(m));
+def fromJsonString(m):
+	return fromJsonMap(json.loads(m));
+
+__callOnShutdown = [];
+def OnShutdown():
+	global __callOnShutdown;
+	def handleShutdownFunction(f):
+		__callOnShutdown.append(f);
+	return handleShutdownFunction;
+def doShutdown():
+	global __callOnShutdown;
+	__callOnShutdown.reverse();
+	for f in __callOnShutdown:
+		f();
+	__callOnShutdown = [];
+def registerShutdownFunction(f):
+	global __callOnShutdown;
+	if not (f in __callOnShutdown):
+		__callOnShutdown.append(f);
+def unregisterShutdownFunction(f):
+	global __callOnShutdown;
+	if f in __callOnShutdown:
+		__callOnShutdown.remove(f);
+

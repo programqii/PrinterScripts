@@ -1,6 +1,7 @@
 from uuid import uuid1 as uuid
 from libUtils import *
 from libVec import vec
+import json
 
 # simple_db = {
 # 	"printers":{},
@@ -8,13 +9,14 @@ from libVec import vec
 # 	"spoolManufacturers":{},
 # 	"jobs":{}
 # };
-
+@JsonType(saveThese=["printers", "spools", "spoolManufacturers", "jobs"])
 class _SimplePrinterDB:
-	def __init__(self):
+	def __init__(self, backingFile):
 		self.printers = {};
 		self.spools = {};
 		self.spoolManufacturers = {};
 		self.jobs = {};
+		self.backingFile = backingFile; # Where The DB Will Be saved
 	def getPrinter(self, printerId):
 		if printerId in self.printers:
 			return self.printers[printerId];
@@ -26,7 +28,7 @@ class _SimplePrinterDB:
 		return True;
 	def newPrinter(self):
 		printerId = "printer-" + str(uuid());
-		self.printers[printerId] = PrinterObject(printerId=printerId);
+		self.printers[printerId] = PrinterObject();
 		return printerId;
 
 	def getSpool(self, spoolId):
@@ -49,6 +51,10 @@ class _SimplePrinterDB:
 	# 	del self.spoolManufacturers[mfrId];
 	# 	return True;
 
+	def newJob(self):
+		jobId = "job-" + str(uuid());
+		self.jobs[jobId] = JobObject();
+		return jobId;
 	def getJob(self, jobId):
 		if jobId in self.jobs:
 			return self.jobs[jobId];
@@ -58,9 +64,28 @@ class _SimplePrinterDB:
 	def deleteJob(self, jobId):
 		del self.jobs[jobId];
 		return True;
+	def save(self):
+		f = open(self.backingFile, "w");
+		f.write(json.dumps(toJsonMap(self)));
+		f.close();
+	@staticmethod
+	def create(backingFile):
+		try:
+			f = open(self.backingFile, "r");
+			o = fromJsonMap(json.loads(f.read()));
+			f.close();
+			if isinstance(o, _SimplePrinterDB):
+				o.backingFile = backingFile;
+				return o;
+		except IOError:
+			return _SimplePrinterDB(backingFile);
+		return _SimplePrinterDB(backingFile);
 
 
-_private_db = _SimplePrinterDB();
+_private_db = create("SimpleDB.json");
+
+def getDataBase():
+	return _private_db;
 
 @JsonType(saveThese=["name", "spoolId", "printBedPlaneRange", "printHeadRange", "commProtocol", "currentJobId"])
 class PrinterObject:
@@ -122,10 +147,15 @@ class JobObject:
 		self.startedTime = None; # Time Stamp ?
 		self.fileOffset = 0; # Current Spot in file
 		self.logfile = "log-" + str(uuid()) + ".txt";
-		self.state = None; # "Stopped", "Ready", "Paused", "Running", "Waiting", "Finished", etc.
+		self.state = "New"; # "New", "Ready", "Stopped", "Paused", "Running", "Waiting", "Finished", etc.
+	def getPrinter(self):
+		global _private_db;
+		_private_db.getPrinter(self.printerId);
 
 
 
-
+@OnShutdown
+def libPrinterObjectsShutdown():
+	global _private_db.save();
 
 		
