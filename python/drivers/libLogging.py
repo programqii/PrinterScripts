@@ -1,23 +1,36 @@
 
 
-globalLoggerFactory = LoggerFactory();
-def buildLogger(tag):
-	global globalLoggerFactory;
-	return globalLoggerFactory.buildLogger(tag);
-
-class LoggerFactory:
+# globalLoggerFactory = LoggerFactory();
+# def buildLogger(tag):
+# 	global globalLoggerFactory;
+# 	return globalLoggerFactory.buildLogger(tag);
+class ConsoleLoggerFactory:
 	def __init__(self):
-		self.mLogFileName = "logfile.txt";
-		self.mFileHandle = open(self.mLogFileName, "a");
-		self.mLogger = self.buildLogger("LoggerFactory");
+		self.mLogger = self.buildLogger("ConsoleLoggerFactory");
 		self.mLogger.logInfo("");
-		self.mLogger.logInfo("----------- Init Logger --------");
+		self.mLogger.logInfo("----------- Init ConsoleLoggerFactory --------");
 	def buildLogger(self, tag):
-		return Logger(self, tag, self.mFileHandle);
+		return ConsoleLogger(self);
+class FileLoggerFactory:
+	def __init__(self, fileName="logFile.txt"):
+		self.mLogFileName = fileName;
+		self.mFileHandle = open(self.mLogFileName, "a");
+		self.mLogger = self.buildLogger("FileLoggerFactory");
+		self.mLogger.logInfo("");
+		self.mLogger.logInfo("----------- Init FileLoggerFactory --------");
+	def buildLogger(self, tag):
+		return FileLogger(self, tag, self.mFileHandle);
 	def __del__(self):
-		self.mFileHandle.flush();
-		self.mFileHandle.close();
-class Logger:
+		if self.mFileHandle != None:
+			self.mFileHandle.flush();
+			self.mFileHandle.close();
+class NullLoggerFactory:
+	def __init__(self):
+		return;
+	def buildLogger(self, tag):
+		return NullLogger();
+
+class ConsoleLogger: #Prints Messages to Stdout
 	def __init__(self, tag, logFileHandle=None):
 		self.tag = tag;
 		self.logFileHandle = logFileHandle;
@@ -32,6 +45,26 @@ class Logger:
 				timestamp=datetime.datetime.now()
 				);
 			print(logEntry);
+	def logError(self, message):
+		self.log(message=message, level="Error");
+	def logInfo(self, message):
+		self.log(message=message, level="Info");
+	def logVerbose(self, message):
+		self.log(message=message, level="Verbose");
+class FileLogger:
+	def __init__(self, tag, logFileHandle=None):
+		self.tag = tag;
+		self.logFileHandle = logFileHandle;
+	def log(self, message, level=""):
+		if message == None:
+			return;
+		for msg in message.split("\n"):
+			logEntry = "{timestamp} [{level}] {tag}: {message}".format(
+				message=msg,
+				tag=self.tag,
+				level=level,
+				timestamp=datetime.datetime.now()
+				);
 			if self.mFileHandle != None:
 				self.mFileHandle.write(logEntry + "\n");
 	def logError(self, message):
@@ -40,3 +73,14 @@ class Logger:
 		self.log(message=message, level="Info");
 	def logVerbose(self, message):
 		self.log(message=message, level="Verbose");
+class NullLogger:
+	def __init__(self):
+		return;
+	def log(self, message, level=""):
+		return;
+	def logError(self, message):
+		return;
+	def logInfo(self, message):
+		return;
+	def logVerbose(self, message):
+		return;

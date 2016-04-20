@@ -15,7 +15,12 @@ class ComPortWrapper:
 		self.mBaud = baud;
 		self.mTimeout = timeout;
 		self.mHandle = None;
-		self.logger = buildLogger("ComPortWrapper");
+		self.logger = None;
+	def _log(self, text):
+		if self.logger != None:
+			self.logger.log(text);
+	def setLoggerFactory(self, loggerFactory):
+		self.logger = loggerFactory.buildLogger("lib3dPrinter.py->MarlinPrinterProtocol");
 	def open(self):
 		if self.mHandle == None:
 			self.close();
@@ -32,11 +37,14 @@ class ComPortWrapper:
 		return None;
 	def read(self, n=-1):
 		if self.mHandle != None:
-			return self.mHandle.read(n);
+			resp = self.mHandle.read(n);
+			if resp != None:
+				resp = resp.decode('utf-8'); #TODO: Verify Encoding on Actual Marlin Hardware
+			return resp;
 		return None;
 	def write(self, s):
 		if self.mHandle != None:
-			return self.mHandle.write(s);
+			return self.mHandle.write(s.encode('utf-8')); #TODO: Allow for raw binary to be sent?
 		else:
 			return None;
 	def flush(self):

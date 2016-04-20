@@ -3,7 +3,6 @@ import sys
 import json
 import datetime
 from libUtils import mapPath, parseWithTypes, JsonType, fromJson, toJson
-from libLogging import buildLogger
 from libComms import parseCommPort
 
 def parsePrinterProtocol(jsonNode):
@@ -14,10 +13,19 @@ class MarlinPrinterProtocol:
 	def __init__(self, commPort):
 		self.mCommPort = commPort;
 		self.errors = [];
-		self.logger = buildLogger("lib3dPrinter.py->MarlinPrinterProtocol");
+		self.logger = None;
+	def _log(self, text):
+		if self.logger != None:
+			self.logger(text);
+	def setLoggerFactory(self, loggerFactory):
+		self.logger = loggerFactory.buildLogger("lib3dPrinter.py->MarlinPrinterProtocol");
+		self.mCommPort.setLoggerFactory(loggerFactory);
+	def isOpen(self):
+		return self.mCommPort.isOpen();
 	def open(self):
 		self.mCommPort.open();
 		self.printResponse();
+		self.sendCmd("M105"); # Read Current Temp (to make sure that The Serial Buffer is clean)
 	def close(self):
 		self.mCommPort.close();
 	def printResponse(self):
@@ -27,7 +35,7 @@ class MarlinPrinterProtocol:
 			if s == '':
 				break;
 			lines += [s];
-			self.logger.log("From Printer: " + s[:-1]);
+			self._log("From Printer: " + s[:-1]);
 			return lines;
 	def readUntilOkOrError(self):
 		while True:
@@ -39,7 +47,7 @@ class MarlinPrinterProtocol:
 			if s.lower() == "ok\n":
 				return True;
 			if(s != ''):
-				self.logger.log("From Printer: " + s[:-1]);
+				self._log("From Printer: " + s[:-1]);
 			if tag.lower() == "error":
 				return False;
 	def readUntilOkOrError(self):
@@ -54,15 +62,15 @@ class MarlinPrinterProtocol:
 				return {"ok": True, "data": lines};
 			if(s != ''):
 				lines += [s[:-1] if s[-1:] == "\n" else s];
-				self.logger.log("From Printer: " + s[:-1]);
+				self._log("From Printer: " + s[:-1]);
 			if tag.lower() == "error":
 				return {"ok": False, "data": lines};
 	def sendCmd(self, cmd):
-		self.logger.logVerbose("Sending Command: " + cmd);
+		self._log("Sending Command: " + cmd);
 		self.mCommPort.write(cmd + "\n");
 		return self.readUntilOkOrError();
 	def emergencyStop(self):
-		self.logger.log("Sending E-Stop Commands");
+		self._log("Sending E-Stop Commands");
 		self.sendCmd("M18");
 		self.sendCmd("M140 S0");
 		self.sendCmd("M104 S0");

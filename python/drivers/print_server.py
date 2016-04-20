@@ -234,21 +234,35 @@ def getJobLog(method, url, body, headers, matchObject):
 	return ApiResponse();
 @apiHandler.endpoint("POST", "/api/job/{id}/gcode") #Submit GCode To Job
 def getJobLog(method, url, body, headers, matchObject):
-	return ApiResponse();
+	response = ApiResponse(code=500)
+	f = open("./gcode/forJob-" + matchObject[1] +".json", "w" );
+	if(header["Content-Type"] == "application/json"):
+		data = json.loads(body);
+		if "rawData" in data:
+			f.write(data["rawData"]);
+			response.setCode(200);
+		elif "gcodeList" in data:
+			for g in data["gcodeList"]:
+				f.write(g + "\n");
+			response.setCode(200);
+	elif (header["Content-Type"] == "application/x-www-form-urlencoded"):
+		f.write(""); #TODO: properly Decode this to recieve a file
+	f.close();
+	return response;
 @apiHandler.endpoint("DELETE", "/api/job/{id}")
 def deleteJobInfo(method, url, body, headers, matchObject):
-	return ApiResponse();
+	return ApiResponse(code=(200 if getDataBase().deleteJob() else 500));
 
-@apiHandler.endpoint("POST", "/api/sendRawCommand")
-def sendRawCommand(method, url, body, headers, matchObject):
-	response = ApiResponse();
-	data = json.loads(body);
-	cmdRes = printer.sendCmd(data["command"]);
-	res = {"data":cmdRes["data"]};
-	response.setCode(200 if cmdRes["ok"] else 500);
-	response.setBody(json.dumps(res));
-	response.setHeader('Content-type', 'application/json');
-	return response;
+# @apiHandler.endpoint("POST", "/api/sendRawCommand")
+# def sendRawCommand(method, url, body, headers, matchObject):
+# 	response = ApiResponse();
+# 	data = json.loads(body);
+# 	cmdRes = printer.sendCmd(data["command"]);
+# 	res = {"data":cmdRes["data"]};
+# 	response.setCode(200 if cmdRes["ok"] else 500);
+# 	response.setBody(json.dumps(res));
+# 	response.setHeader('Content-type', 'application/json');
+# 	return response;
 
 def errorMessageResponse(code, errorMessage):
 	return ApiResponse(code=code, jsonBody={"errorMessage": errorMessage });

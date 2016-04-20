@@ -4,10 +4,19 @@ import json
 import datetime
 from lib3dPrinter import MarlinPrinterProtocol, GcodeCommandBuffer
 from libComms import ComPortWrapper, MockComPortWrapper
-from libLogging import buildLogger
+from libLogging import NullLogger
 
-logger = buildLogger("libUtils.py");
-
+logger = NullLogger();
+class BeginEnd:
+	def __init__(self, beginFunc=None, endFunc=None):
+		self.mBegin = beginFunc;
+		self.mEnd = endFunc;
+	def __enter__(self):
+		if self.mBegin != None:
+			self.mBegin();
+	def __exit__(self, pType, pValue, pTraceback):
+		if self.mEnd != None:
+			self.mEnd();
 # Structure & function for registering json "types" that have toJson & fromJson defined
 __ClassNames = {};
 def JsonType(typeName=None, saveThese=None):			
