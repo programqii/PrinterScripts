@@ -1,3 +1,4 @@
+from libUtils import JsonType
 
 class MathError(Exception):
 	def __init__(self, message):
@@ -53,6 +54,8 @@ class vec(object):
 		return vec(*jsonNode["data"]);
 	def toJson(self):
 		return {"data": self._data};
+	def updateFromJson(self, jsonNode, blackList=[], whiteList=None):
+		self._data = jsonNode["data"];
 	def toString(self):
 		return str(self._data);
 	def __str__(self):

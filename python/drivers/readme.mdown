@@ -1,3 +1,7 @@
+## Setup / Non-standard libraries used
+
+* pyserial - to install run: "pip install pyserial"
+
 ## Basic description of scripts/Files
 
 * Printer3DLib.py - Python Library built of of code that could be easily re-usable

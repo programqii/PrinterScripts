@@ -2,7 +2,6 @@ from uuid import uuid1 as uuid
 from libUtils import *
 from libVec import vec
 from libLogging import NullLoggerFactory, FileLoggerFactory
-import json
 import threading, Queue
 import time
 
@@ -13,8 +12,8 @@ import time
 # 	"jobs":{}
 # };
 @JsonType(saveThese=["printers", "spools", "spoolManufacturers", "jobs"])
-class _SimplePrinterDB:
-	def __init__(self, backingFile):
+class SimplePrinterDB:
+	def __init__(self, backingFile=None):
 		self.printers = {};
 		self.spools = {};
 		self.spoolManufacturers = {};
@@ -70,8 +69,10 @@ class _SimplePrinterDB:
 			return True;
 		return False;
 	def save(self):
+		if self.backingFile == None:
+			return ;
 		f = open(self.backingFile, "w");
-		f.write(json.dumps(toJsonMap(self)));
+		f.write(toJsonString(self));
 		f.close();
 	def shutdown(self):
 		# Shutdown All threads
@@ -81,21 +82,20 @@ class _SimplePrinterDB:
 	@staticmethod
 	def create(backingFile):
 		try:
-			f = open(self.backingFile, "r");
-			o = fromJsonMap(json.loads(f.read()));
+			f = open(backingFile, "r");
+			o = fromJsonString(f.read());
 			f.close();
-			if isinstance(o, _SimplePrinterDB):
+			if isinstance(o, SimplePrinterDB):
 				o.backingFile = backingFile;
+				for i in o.printers:
+					o.printers[i].setDataBase(o);
+				for i in o.jobs:
+					o.jobs[i].setDataBase(o);
 				return o;
 		except IOError:
-			return _SimplePrinterDB(backingFile);
-		return _SimplePrinterDB(backingFile);
+			return SimplePrinterDB(backingFile);
+		return SimplePrinterDB(backingFile);
 
-#TODO: Put this _private_db in the Main print_server.py file if possible
-_private_db = create("SimpleDB.json");
-
-def getDataBase():
-	return _private_db;
 class PrinterThread(threading.Thread):
 	def __init__(self, parentPrinterObject):
 		self.parentPrinterObject = parentPrinterObject;
@@ -181,7 +181,7 @@ class PrinterThread(threading.Thread):
 	def pauseJob(self):
 		with BeginEnd(self._jobLock.acquire, self._jobLock.release) as aLock:
 			job = self.job;
-			if job != None and job.state in ["Running", "Paused", "New"];
+			if job != None and job.state in ["Running", "Paused", "New"]:
 				self.job.state = "Paused";
 				job.log("Job Paused");
 				return True;
@@ -208,17 +208,24 @@ class PrinterObject:
 		self.name = "";
 		self.spoolId = None;
 		self.printBedPlaneRange = [vec(0,0,0).asFloat(), vec(20,20,0).asFloat()];
-		self.printHeadRange = [vec(0,0,0).asFloat(), vec(200,200,200)].asFloat();
+		self.printHeadRange = [vec(0,0,0).asFloat(), vec(200,200,200).asFloat()];
 		self.commProtocol = None;
 		self.currentJobId = None;
 		#Thread Instance for Currently running job
 		self.threadInfo = None;
+		self._dataBase = None;
+	def setDataBase(self, dataBase):
+		self._dataBase = dataBase;
 	def getSpool(self):
-		global _private_db;
-		return _private_db.getSpool(self.spoolId);
+		if self._dataBase != None:
+			return _dataBase.getSpool(self.spoolId);
+		else:
+			return None;
 	def getCurrentJob(self):
-		global _private_db;
-		return _private_db.getJob(self.currentJobId);
+		if self._dataBase != None:
+			return _dataBase.getJob(self.currentJobId);
+		else:
+			return None;
 	def _getThread(self):
 		if self.threadInfo == None:
 			self.threadInfo = PrinterThread(self);
@@ -235,6 +242,7 @@ class PrinterObject:
 		return self._getThread().runRawCommands(commandList);
 	def shutdown(self):
 		if self.threadInfo != None:
+			print("Shutting Down Printer Thread for: " + self.name);
 			self.threadInfo.shutdown();
 			self.threadInfo = None;
 			#Clear Job (Just in case)
@@ -271,6 +279,9 @@ class JobObject:
 		self._fileSize = 0;
 		self.linesProcessed = 0;
 		self._jobLogger = None;
+		self._dataBase = None;
+	def setDataBase(self, dataBase):
+		self._dataBase = dataBase;
 	def log(self, text):
 		if self._jobLogger == None:
 			self._jobLogger = getLoggerFactroy().buildLogger("JobObject");
@@ -283,8 +294,10 @@ class JobObject:
 		else:
 			self._loggerFactory = NullLoggerFactory();
 	def getPrinter(self):
-		global _private_db;
-		_private_db.getPrinter(self.printerId);
+		if self._dataBase != None:
+			return self._dataBase.getPrinter(self.printerId);
+		else:
+			return None;
 	def getNextCommand(self):
 		if self.gcodeFilePath == None:
 			return None;
@@ -310,10 +323,5 @@ class JobObject:
 		return None;
 	def shutdown():
 		return ;
-
-@OnShutdown
-def libPrinterObjectsShutdown():
-	global _private_db
-	_private_db.shutdown();
 
 		

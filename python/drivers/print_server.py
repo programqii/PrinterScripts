@@ -1,71 +1,20 @@
 import json
-from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 from os import curdir, sep
 from lib3dPrinter import MarlinPrinterProtocol, GcodeCommandBuffer
 from libComms import ComPortWrapper, MockComPortWrapper
 from libUtils import *
-from libLogging import buildLogger
 from libPrinterObjects import *
+from libHttpUtil import *
 import re
 import socket
 
-args = ArgsParse();
+apiHandler = RequestHandler();
+#TODO: Put this _private_db in the Main print_server.py file if possible
+_dataBase = SimplePrinterDB.create("SimpleDB.json");
 
-PORT_NUMBER = int(args.getValue("http_port", 8081));
+def getDataBase():
+	return _dataBase;
 
-apiHandler = RequestHandler(basePath="");
-class RequestHandler:
-	def __init__(self, basePath="/"):
-		self.mApis = { "_GET" :[], "_POST":[], "_DELETE":[], "_PUT":[]};
-		if basePath != "/":
-			self.mBasePath = basePath;
-		else:
-			self.mBasePath = "";
-	def handleRequest(self, method, url, body, headers):
-		# Trim Off Base Path part
-		if len(self.mBasePath) < len(url) and url[:len(self.mBasePath)] == self.mBasePath and self[len(self.mBasePath)]:
-			url = url[len(self.mBasePath):];
-		else:
-			return None;
-		# Search for/By Request Method
-		if not (("_" + method) in self.mApis):
-			return None;
-		# Find Path Match
-		for endPoint in self.mApis["_" + method]:
-			m = endPoint["pathRegex"].match(url) 
-			if m:
-				return endPoint["pathRegex"].callBack(method, url, body, headers, m);
-		return None;
-	def endpoint(self, method, urlExpr):
-		def decoratorHandler(func):
-			self.mApis["_" + method] = self.mApis["_" + method] || [];
-			self.mApis["_" + method] += [{"pathRegex":urlExpr, "callBack": func}];
-		return decoratorHandler;	
-	def addHandler(self, method, urlExpr, func):
-		if not (("_" + method) in self.mApis):
-			self.mApis["_" + method] = []
-		self.mApis["_" + method] += [{
-			"pathRegex":urlExpr,
-			"callBack": func
-		}];
-
-mimeTypes = {
-	".json":"application/json",
-	".pdf":"application/pdf",
-	".txt":"text/plain",
-	".zip":"application/zip",
-	".xml":"application/xml"
-	".svg":"image/svg+xml",
-	".tiff":"image/tiff",
-	".png":'image/png',
-	".html":"text/html",
-	".jpg":'image/jpg',
-	".gif":'image/gif',
-	".js":'application/javascript',
-	".css":'text/css',
-	".csv":"text/csv",
-	".mdown":"text/markdown"
-}
 @apiHandler.endpoint("GET", re.compile(r"/static/(.*)(\?.*)?") )
 def handleStaticFiles(method, url, body, headers, matchObject):
 	try:
@@ -124,23 +73,24 @@ def getPrintersList(method, url, body, headers, matchObject):
 	return ApiResponse(code=200, jsonBody=getDataBase().listPrinters());
 @apiHandler.endpoint("POST", "/api/printers/new")
 def createPrinter(method, url, body, headers, matchObject):
+	print "createPrinter"
 	return ApiResponse(code=200, jsonBody={"printerId":getDataBase().newPrinter()});
-@apiHandler.endpoint("GET", "/api/printer/{id}")
+@apiHandler.endpoint("GET", "/api/printer/{id}" )
 def getPrinterInfo(method, url, body, headers, matchObject):
-	printer = getDataBase().getPrinter(matchObject[1]);
+	printer = getDataBase().getPrinter(matchObject.group(1));
 	if printer != None:
 		return ApiResponse(code=200, jsonBody=printer);
 	else:
-		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject[1]));
+		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject.group(1)));
 @apiHandler.endpoint("DELETE", "/api/printer/{id}")
 def deletePrinterInfo(method, url, body, headers, matchObject):
-	printer = getDataBase().getPrinter(matchObject[1]);
+	printer = getDataBase().getPrinter(matchObject.group(1));
 	if printer == None:
-		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject[1]));
+		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject.group(1)));
 	elif printer.getCurrentJob() != None:
-		return errorMessageResponse(500, "Cannot delete printer \"{0}\" because it is currently assigned job \"{1}\"".format(matchObject[1], printer.currentJobId));
+		return errorMessageResponse(500, "Cannot delete printer \"{0}\" because it is currently assigned job \"{1}\"".format(matchObject.group(1), printer.currentJobId));
 	else:
-		getDataBase().deletePrinter(matchObject[1]);
+		getDataBase().deletePrinter(matchObject.group(1));
 		return ApiResponse(code=200);
 # @apiHandler.endpoint("GET", "/api/printer/{id}/ini_config")
 # def getPrinterConfigAsIni(method, url, body, headers, matchObject):
@@ -148,30 +98,30 @@ def deletePrinterInfo(method, url, body, headers, matchObject):
 @apiHandler.endpoint("POST", "/api/printer/{id}")
 def setPrinterInfo(method, url, body, headers, matchObject):
 	response = ApiResponse();
-	printer = getDataBase().getPrinter(matchObject[1]);
+	printer = getDataBase().getPrinter(matchObject.group(1));
 	if printer == None:
-		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject[1]));
+		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject.group(1)));
 	elif printer.currentJobId != None:
-		return errorMessageResponse(500, "Cannot update printer \"{0}\" because it is currently assigned job \"{1}\"".format(matchObject[1], printer.currentJobId));
+		return errorMessageResponse(500, "Cannot update printer \"{0}\" because it is currently assigned job \"{1}\"".format(matchObject.group(1), printer.currentJobId));
 	else:
 		printer.updateFromJson(json.loads(body), blackList=["currentJobId"]); # Do Not allow the assignemnt of jobs through this endpoint 
 		return ApiResponse(code=200, jsonBody=printer);
 @apiHandler.endpoint("POST", "/api/printer/{id}/job")
 def setPrinterInfo(method, url, body, headers, matchObject):
 	data = fromJsonString(body);
-	printer = getDataBase().getPrinter(matchObject[1]);
+	printer = getDataBase().getPrinter(matchObject.group(1));
 	job = getDataBase().getJob(data["jobId"]) if "jobId" in data else None;
 	if printer == None:
-		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject[1]));
+		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject.group(1)));
 	elif printer.currentJobId != None:
-		return errorMessageResponse(500, "Cannot assign job to printer \"{0}\" because it is currently assigned job \"{1}\" which must be stopped first".format(matchObject[1], printer.currentJobId));
+		return errorMessageResponse(500, "Cannot assign job to printer \"{0}\" because it is currently assigned job \"{1}\" which must be stopped first".format(matchObject.group(1), printer.currentJobId));
 	elif not ("jobId" in data):
 		return errorMessageResponse(500, "Missing 'jobId' in request");
 	elif job == None:
 		return errorMessageResponse(404, "Cannot find Job \"{0}\"".format(data["jobId"]));
 	else:
 		printer.currentJobId = data["jobId"]; #TODO: if job was has already been executed OR job is being executed on another printer -> Copy Job and return a new ID
-		job.printerId = matchObject[1];
+		job.printerId = matchObject.group(1);
 		return ApiResponse(code=200, jsonBody={"jobId": data["jobId"]});
 @apiHandler.endpoint("GET", "/api/printer/{id}/status")
 def getPrinterStatus(method, url, body, headers, matchObject):
@@ -195,9 +145,9 @@ def resumePrinter(method, url, body, headers, matchObject):
 @apiHandler.endpoint("POST", "/api/printer/{id}/rawGcode")
 def sendRawGcodeToPrinter(method, url, body, headers, matchObject):
 	data = fromJsonString(body);
-	printer = getDataBase().getPrinter(matchObject[1]);
+	printer = getDataBase().getPrinter(matchObject.group(1));
 	if printer == None:
-		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject[1]));
+		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject.group(1)));
 	elif printer.currentJobId != None:
 		return errorMessageResponse(500, "Cannot Execute G-Code, printer is currently assigned job \"{1}\" which must be stopped first".format(printer.currentJobId));
 	elif not ("gcode" in data) and isinstance(data["gcode"], list):
@@ -235,7 +185,7 @@ def getJobLog(method, url, body, headers, matchObject):
 @apiHandler.endpoint("POST", "/api/job/{id}/gcode") #Submit GCode To Job
 def getJobLog(method, url, body, headers, matchObject):
 	response = ApiResponse(code=500)
-	f = open("./gcode/forJob-" + matchObject[1] +".json", "w" );
+	f = open("./gcode/forJob-" + matchObject.group(1) +".json", "w" );
 	if(header["Content-Type"] == "application/json"):
 		data = json.loads(body);
 		if "rawData" in data:
@@ -264,64 +214,32 @@ def deleteJobInfo(method, url, body, headers, matchObject):
 # 	response.setHeader('Content-type', 'application/json');
 # 	return response;
 
-def errorMessageResponse(code, errorMessage):
-	return ApiResponse(code=code, jsonBody={"errorMessage": errorMessage });
-class ApiResponse:
-	def __init__(self, code=500, body="", headers={}, jsonBody=None):
-		self.mBody = body;
-		self.mCode = code;
-		self.mHeaders = headers;
-		if jsonBody != None:
-			self.mHeaders['Content-type'] = 'application/json';
-			self.mBody = toJsonString(jsonBody);
-	def setHeader(self, name, value):
-		self.mHeaders[name] = value;
-	def setCode(self, code):
-		self.mCode = code;
-	def setBody(self, body):
-		self.mBody = body;
-#This class will handles any incoming request from
-#the browser 
-class myHandler(BaseHTTPRequestHandler):
-	def sendToHandle(self, type):
-		response = apiHandler.handleRequest("GET", self.path, self.rfile.read(int(self.headers['content-length'])), self.headers);
-		if response != None:
-			self.send_response(response.mCode);
-			for i in response.mHeaders:
-				self.send_header(i, response.mHeaders[i]);
-			self.end_headers();
-			self.wfile.write(response.mBody);
-		else:
-			self.send_response(500)
-			self.end_headers()
-			self.wfile.write("")
-			f.close();
-	#Handler for the GET requests
-	def do_GET(self):
-		self.sendToHandle("GET");
-	#Handler for the POST requests
-	def do_POST(self):
-		self.sendToHandle("POST");
-	def do_DELETE(self):
-		return;		
 			
 # printer = PrinterProtocol(port=port, baud=baud, timeout=0.5);
+def main(args):
 
-try:
-	#Create a web server and define the handler to manage the
-	#incoming request
-	server = HTTPServer(('', PORT_NUMBER), myHandler)
-	print 'Started httpserver on ' + socket.gethostname() + ":" + str(PORT_NUMBER)
-	server.timeout=0.1;
-	#Wait forever for incoming htto requests
-	server.serve_forever();
-	# while True:
-	# 	server.handle_request();
-	# 	print "lol"
+	PORT_NUMBER = int(args.getValue("http_port", 8080));
 
-except KeyboardInterrupt:
-	print '^C received, shutting down the web server'
-	server.socket.close()
-	doShutdown();
-	# printer.emergencyStop();
-	# printer.close();
+	try:
+		#Create a web server and define the handler to manage the
+		#incoming request
+		server = buildHttpServer(apiHandler=apiHandler, port=PORT_NUMBER);
+		# server = HTTPServer(('', PORT_NUMBER), myHandler)
+		print 'Started httpserver on ' + socket.gethostname() + ":" + str(PORT_NUMBER)
+		server.timeout=0.1;
+		#Wait forever for incoming htto requests
+		server.serve_forever();
+		# while True:
+		# 	server.handle_request();
+		# 	print "lol"
+
+	except KeyboardInterrupt:
+		print '^C received, shutting down the web server'
+		server.socket.close()
+		doShutdown();
+		_dataBase.shutdown();
+		# printer.emergencyStop();
+		# printer.close();
+
+if __name__ == "__main__":
+	main(ArgsParse());

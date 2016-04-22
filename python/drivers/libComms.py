@@ -3,27 +3,27 @@ import sys
 import json
 import datetime
 from libUtils import parseWithTypes, mapPath, JsonType
-from libLogging import buildLogger
+from libLogging import NullLogger
 
 def parseCommPort(jsonNode, loggerFactory):
 	ret = parseWithTypes(jsonNode, ComPortWrapper);
 
-@JsonType
+@JsonType(saveThese=["mPort", "mBaud", "mTimeout"])
 class ComPortWrapper:
 	def __init__(self, port='/dev/ttyACM0', baud=115200, timeout=0.5):
 		self.mPort = port;
 		self.mBaud = baud;
 		self.mTimeout = timeout;
 		self.mHandle = None;
-		self.logger = None;
-	def _log(self, text):
-		if self.logger != None:
-			self.logger.log(text);
+		self.logger = NullLogger();
 	def setLoggerFactory(self, loggerFactory):
-		self.logger = loggerFactory.buildLogger("lib3dPrinter.py->MarlinPrinterProtocol");
+		self.logger = loggerFactory.buildLogger("libComms.py->ComPortWrapper");
+		if self.logger == None:
+			self.logger = NullLogger();
 	def open(self):
 		if self.mHandle == None:
 			self.close();
+		self.logger.logInfo("Opening Serial Port "+ self.mPort + " @ "+ self.mBaud + " baud");
 		self.mHandle = serial.Serial(self.mPort, self.mBaud, timeout=self.mTimeout);
 		return self.mHandle != None;
 	def isOpen(self):
@@ -31,6 +31,7 @@ class ComPortWrapper:
 	def close(self):
 		if self.mHandle != None:
 			self.mHandle.close();
+			self.logger.logInfo("Closing Serial Port "+ self.mPort);
 	def readline(self):
 		if self.mHandle != None:
 			return self.mHandle.readline();
@@ -52,19 +53,21 @@ class ComPortWrapper:
 			return self.mHandle.flush();
 	def __del__(self):
 		self.close();
-	def toJson(self):
-		return {mBaud=self.mBaud, mPort=self.mPort, mTimeout=self.mTimeout};
-	@staticmethod
-	def fromJson(jsonNode):
-		return ComPortWrapper(
-			port=mapPath(jsonNode, "mPort", '/dev/ttyACM0'), 
-			baud=mapPath(jsonNode, "mBaud", 115200),
-			timeout=mapPath(jsonNode, "mTimeout", 0.5)
-			);
-@JsonType
+	# def toJson(self):
+	# 	return {"mBaud":self.mBaud, "mPort": self.mPort, "mTimeout":self.mTimeout};
+	# @staticmethod
+	# def fromJson(jsonNode):
+	# 	return ComPortWrapper(
+	# 		port=mapPath(jsonNode, "mPort", '/dev/ttyACM0'), 
+	# 		baud=mapPath(jsonNode, "mBaud", 115200),
+	# 		timeout=mapPath(jsonNode, "mTimeout", 0.5)
+	# 		);
+@JsonType(saveThese=[])
 class MockComPortWrapper:
 	def __init__(self):
 		self.imOpen = False;
+	def setLoggerFactory(self, loggerFactory):
+		return ;
 	def open(self):
 		self.imOpen = True;
 		return self.imOpen;
@@ -83,9 +86,4 @@ class MockComPortWrapper:
 		0;
 	def __del__(self):
 		0;
-	def toJson(self):
-		return {};
-	@staticmethod
-	def fromJson(jsonNode):
-		return MockComPortWrapper();
 

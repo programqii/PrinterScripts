@@ -1,14 +1,13 @@
-import serial
 import sys
 import json
 import datetime
-from libUtils import mapPath, parseWithTypes, JsonType, fromJson, toJson
+from libUtils import mapPath, parseWithTypes, JsonType
 from libComms import parseCommPort
 
 def parsePrinterProtocol(jsonNode):
 	return parseWithTypes(jsonNode, MarlinPrinterProtocol);
 # Sends G-Code & recieves / Interprets Reponses
-@JsonType
+@JsonType(saveThese=["mCommPort"])
 class MarlinPrinterProtocol:
 	def __init__(self, commPort):
 		self.mCommPort = commPort;
@@ -75,18 +74,11 @@ class MarlinPrinterProtocol:
 		self.sendCmd("M140 S0");
 		self.sendCmd("M104 S0");
 		self.sendCmd("M81");
-	def toJson(self):
-		return {mCommPort=toJson(self.mCommPort));
-	@staticmethod
-	def fromJson(jsonNode):
-		# commPort = None;
-		# commPort = commPort if commPort != None else ComPortWrapper.fromJson(mapPath(jsonNode, "commPort"));
-		return MarlinPrinterProtocol(
-			commPort=fromJson(jsonNode["mCommPort"]);
-			);
+
 def parseGcodeBuffer(jsonNode):
 	return parseWithTypes(jsonNode, GcodeCommandBuffer);
-@JsonType
+
+@JsonType(saveThese={"filePath": "mFilePath", "nextCommand": "mNextCommand"})
 class GcodeCommandBuffer:
 	def __init__(self, filePath, startAtCmd=0):
 		self.mLines = [];
@@ -117,12 +109,4 @@ class GcodeCommandBuffer:
 		return (1.0*self.mNextCommand) / len(self.mLines);
 	def numCommandsLeft(self):
 		return len(self.mLines) - self.mNextCommand;
-	def toJson(self):
-		return { filePath=self.mFilePath, nextCommand=self.mNextCommand };
-	@staticmethod
-	def fromJson(jsonNode):
-		return GcodeCommandBuffer(
-			filePath=mapPath(jsonNode, "filePath"),
-			startAtCmd=mapPath(jsonNode, "nextCommand", 0)
-			);
 

@@ -1,9 +1,6 @@
-import serial
 import sys
 import json
 import datetime
-from lib3dPrinter import MarlinPrinterProtocol, GcodeCommandBuffer
-from libComms import ComPortWrapper, MockComPortWrapper
 from libLogging import NullLogger
 
 logger = NullLogger();
@@ -37,6 +34,7 @@ def JsonType(typeName=None, saveThese=None):
 							setattr(self, i, fromJsonMap(jsonNode[i]));
 				@staticmethod
 				def fromJson(jsonNode):
+					# print ("Reading: " + classDef.__name__)
 					ret = classDef();
 					for i in saveThese:
 						if i in jsonNode:
@@ -59,6 +57,7 @@ def JsonType(typeName=None, saveThese=None):
 							setattr(self, i, fromJsonMap(jsonNode[saveThese[i]]));
 				@staticmethod
 				def fromJson(jsonNode):
+					# print ("Reading: " + classDef.__name__)
 					ret = classDef();
 					for i in saveThese:
 						if saveThese[i] in jsonNode:
@@ -68,6 +67,8 @@ def JsonType(typeName=None, saveThese=None):
 				classDef.toJson = toJson;
 				classDef.updateFromJson = updateFromJson;
 		__ClassNames[typeName or classDef.__name__] = classDef;
+		# print("Registered " + classDef.__name__ + " as " + (typeName or classDef.__name__) + " for JsonType");
+		return classDef;
 	return handleClassDef;
 
 #Python Compat
@@ -110,23 +111,6 @@ class ArgsParse:
 	# def toJson(self):
 	# 	return {"argMap":self.argMap, "flags": self.flags};
 
-def printerFromArgs(args): #Note "args" is an instance of ArgsParse
-	global logger;
-	baud = args.getValue("baud", 115200);
-	port = args.getValue("port", '/dev/ttyACM0');
-	timeout = args.getValue("timeout", 1.0);
-	useMock = args.getValue("useMock", "False").lower() == "true";
-	if(filePath == None and not useMock):
-		logger.logError("no File specified");
-		exit(1);
-	logger.logInfo("Params: port=" + port + ", baud=" + str(baud) + ", File=" + str(filePath)+ ", useMock=" + str(useMock));
-	commPort = None;
-	if useMock:
-		commPort = MockComPortWrapper();
-	else:
-		commPort = ComPortWrapper(port=port, baud=baud, timeout=timeout);
-	return MarlinPrinterProtocol(commPort=commPort )
-
 
 # Utility Function For Navigating Json Objects more Easily 
 def mapPath(mmap, path, defaultValue=None):
@@ -142,12 +126,12 @@ def mapPath(mmap, path, defaultValue=None):
 	except TypeError:
 		return defaultValue;
 # Try to parse jsonNode with the types listed in args, if unsucccessful, return defaultValue
-def parseWithTypes(jsonNode, *args, defaultValue=None):
+def parseWithTypes(jsonNode, *args, **margs):
 	for i in args:
 		r = i.fromJson(jsonNode);
 		if r != None:
 			return r;
-	return defaultValue;
+	return margs["defaultValue"] if "defaultValue" in margs else None;
 
 # Recursivly parse Json Structure
 def fromJsonMap(m):
@@ -157,8 +141,12 @@ def fromJsonMap(m):
 			r += [fromJsonMap(i)];
 		return r;
 	elif isinstance(m, dict):
-		if "__type" in m and m["__type"] in __ClassNames:
-			return __ClassNames[m["__type"]].fromJson(m);
+		if "__type" in m:
+			if m["__type"] in __ClassNames:
+				return __ClassNames[m["__type"]].fromJson(m);
+			else:
+				print ("Cannot Find Class def: " + m["__type"]);
+			return m
 		else:
 			r = {};
 			for i in m:
@@ -185,16 +173,15 @@ def toJsonMap(m):
 	else:
 		return m;
 def toJsonString(m):
-	return json.dumps(toJsonMap(m));
+	return json.dumps(toJsonMap(m), indent=4, separators=(',', ': '), sort_keys=True);
 def fromJsonString(m):
 	return fromJsonMap(json.loads(m));
 
 __callOnShutdown = [];
-def OnShutdown():
+def OnShutdown(f):
 	global __callOnShutdown;
-	def handleShutdownFunction(f):
-		__callOnShutdown.append(f);
-	return handleShutdownFunction;
+	__callOnShutdown.append(f);
+	return f;
 def doShutdown():
 	global __callOnShutdown;
 	__callOnShutdown.reverse();
