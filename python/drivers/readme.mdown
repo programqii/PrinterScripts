@@ -107,3 +107,77 @@ Set Gcode to Run when job is executed
 Delete Specified Job & releated Data (Ex: Log files, stored g-code, etc.)
 
 
+## "Object Stuctures" in Json Data Sent / Returned
+
+# Generic Structure
+
+``` 
+{
+	"__type":"myObjectType"	
+}
+```
+
+in requests to update varrious Stuctures (Jobs, Configurations, etc.) it will always be created with basic/default values that will be returned as "Null" when queried/Read for example if i wanted to know what structure of the "SquareShape" object that I'm passing as a paramter to the printer I would just need to set the value to ```{"__type":"SquareShape"}``` and re-query the printer configuration to see the default values of a "SquareShape" (or just initalize it the default "SquareShape")
+
+
+# Stuctures Available 
+
+*vector* - For Storaing Points in Space (2d or 3d)
+```
+{
+	"__type": "vector",
+	"data": [
+		<Float>,
+		<Float>,
+		<Float>
+	]
+}
+```
+
+*JobObject* - Stores the Configuration Data for a specific Job
+```
+{
+	"__type": "JobObject",
+	"estimatedTime": <Float> - (NOT IMPLEMETED) Time In seconds it will take Job to finish
+	"fileOffset": <Integer> - Current Place in file that the job is currently at
+	"gcodeFilePath": <String/File Path> - Path to File Containing the G-Code fo this Job
+	"linesProcessed": <Integer> - Current Count of the Current number of lines in g-code file that have been sent to the printer
+	"logfile": <String/File Path> - Path to the Jobs Logfile,
+	"name": <String> - (Not Used) the Jobs "Human Friendly" Name
+	"printerId": <String> - Id of the Printer that this job has/will execute on
+	"progress": <Float: 0.0-1.0> - Percent Complete of job
+	"startedTime": <String> - Time Stamp of when Job Was Started
+	"state": <One of: "New", "Stopped", "Paused", "Running", "Waiting", "Done"> - Current "State" of the job
+}
+```
+
+*PrinterObject* - Config for a printer
+```
+{
+	"__type": "PrinterObject",
+	"commProtocol": <"MockComPortWrapper" or "ComPortWrapper" Object >,
+	"currentJobId": <String/Null> - Currently Assigned Job (Null indicated no job assigned/last job complete/stopped)
+	"name": <String> - "Human Friendly" Name of the printer
+	"printBedPlaneRange": <Array of 2 "vector" objects> - (Not Implemented) Area Where the print bed resides
+	"printHeadRange": <Array of 2 "vector" objects> - (Not Implements) Min/Max Area where the print head can move
+	"spoolId": <String> - Id of the Spool Currently Attached to the printer
+}
+```
+
+*MockComPortWrapper* - a "Mock" Communications Port that accepts all commands instantly (with no response)
+```
+{
+	"__type": "MockComPortWrapper"
+}
+```
+
+*ComPortWrapper* - Represents a real serial port connection
+```
+{
+	"__type": "ComPortWrapper",
+	"mBaud": <Integer> - the baud rate in bits/sec (Ex: 115200)
+	"mPort": <String/FilePath> - Path to the device file of the serial port
+	"mTimeout": <Float> - Communication Timeout (How long to wait for a response from the printer, if it's not sending back data)
+}
+```
+
