@@ -28,10 +28,10 @@ Basic WIP Server for Manipulating the printer, it can recieve raw G-code and sen
 
 ## Endpoints
 
-# GET /static/.*
+### GET /static/.*
 Get File Listed under "./http/static" 
 
-# POST /api/printer/{printerId}/rawGcode 
+### POST /api/printer/{printerId}/rawGcode 
 Send Raw Gcode to printer (even while in the middle of a print/job)
 *Post Body:* 
 ```
@@ -49,24 +49,24 @@ Send Raw Gcode to printer (even while in the middle of a print/job)
 ```
 *Note:* The enpoint will not return until the Printer Has Acknologed all commands sent (Ex: "Wait until Temp reached" will not return with a response unitl the temprature is reached)
 
-# GET /api/printers
+### GET /api/printers
 List the configured printers on the server
 
 *Response Body:* <Array of strings> - the PrinterIds available on server
 
-# POST /api/printers/new
+### POST /api/printers/new
 Create a new printer (With Default/dummy Info) and return it's ID
 
-# GET /api/printer/{printerId}
+### GET /api/printer/{printerId}
 Get the specified printers Configuration
 
-# DELETE /api/printer/{printerId}
+### DELETE /api/printer/{printerId}
 Delete The specified Printer Configuration
 
-# POST /api/printer/{printerId}
+### POST /api/printer/{printerId}
 Update The specified printers configuration (Note Current Job Id Cannot be updated/changed from this endpoint )
 
-# POST /api/printer/{printerId}/job
+### POST /api/printer/{printerId}/job
 Update/Set the current job for the specified printer (Note: Does not automatically start Print)
 
 *Post Body:* 
@@ -76,43 +76,43 @@ Update/Set the current job for the specified printer (Note: Does not automatical
 }
 ```
 
-# GET /api/printer/{printerId}/status (NOT IMPLEMENTED)
+### GET /api/printer/{printerId}/status (NOT IMPLEMENTED)
 Get the current Status of the specified printer
 
-# POST /api/printer/{printerId}/start 
+### POST /api/printer/{printerId}/start 
 Start/Resume Current Print Job on specified printer
 
-# POST /api/printer/{printerId}/stop
+### POST /api/printer/{printerId}/stop
 Stop / Cancel Current Print Job on printer 
 
-# POST /api/printer/{id}/pause
+### POST /api/printer/{id}/pause
 Pause Current Print job
 
-# GET /api/jobs
+### GET /api/jobs
 Get All JobIDs Currently available on server
 
 *Response Body:* Arrays Of strings containing "JobIds"
 
-# POST /api/jobs/new
+### POST /api/jobs/new
 Create A new Job
 
 *Response Body:* ID of newly created job
 
-# GET /api/job/{jobId}/log (NOT IMPLEMENTED)
+### GET /api/job/{jobId}/log (NOT IMPLEMENTED)
 Get Log data from Specified Job
 
-# POST /api/job/{jobId}/gcode
+### POST /api/job/{jobId}/gcode
 Set Gcode to Run when job is executed (Note: on the server it will create a "./gcode/forJob-{jobId}.json" file)
 *Request Body:* ```{"rawData": <String> - Raw Text from gcode file}```
 *Request Body:* ```{"gcodeList": <Array of Strings> - Gcode Lines to execute}```
 
-# DELETE /api/job/{jobId}
+### DELETE /api/job/{jobId}
 Delete Specified Job & releated Data (Ex: Log files, stored g-code, etc.)
 
 
 ## "Object Stuctures" in Json Data Sent / Returned
 
-# Generic Structure
+### Generic Structure
 
 ``` 
 {
@@ -123,7 +123,7 @@ Delete Specified Job & releated Data (Ex: Log files, stored g-code, etc.)
 in requests to update varrious Stuctures (Jobs, Configurations, etc.) it will always be created with basic/default values that will be returned as "Null" when queried/Read for example if i wanted to know what structure of the "SquareShape" object that I'm passing as a paramter to the printer I would just need to set the value to ```{"__type":"SquareShape"}``` and re-query the printer configuration to see the default values of a "SquareShape" (or just initalize it the default "SquareShape")
 
 
-# Stuctures Available 
+### Stuctures Available 
 
 *vector* - For Storaing Points in Space (2d or 3d)
 ```
