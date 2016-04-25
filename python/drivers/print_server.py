@@ -132,16 +132,40 @@ def getPrinterStatus(method, url, body, headers, matchObject):
 	return ApiResponse(200, jsonBody=statusObj);
 @apiHandler.endpoint("POST", "/api/printer/{id}/start")
 def getPrinterStatus(method, url, body, headers, matchObject):
-	return ApiResponse();
+	printerId = matchObject.group(1);
+	printer = _dataBase.getPrinter(printerId);
+	if printer == None:
+		return errorMessageResponse(500, "Cannot Find Printer With Id \"{0}\"".format(printerId))
+	elif printer.getJob() == None:
+		return errorMessageResponse(500, "No Job Currently Assigned to printer \"{0}\"".format(printerId))
+	if printer.startJob():
+		return ApiResponse(200, jsonBody={});
+	else:
+		return errorMessageResponse(500, "Error Starting Job (Please Check Logs)".format(printerId))
 @apiHandler.endpoint("POST", "/api/printer/{id}/stop")
 def stopPrinter(method, url, body, headers, matchObject):
-	return ApiResponse();
+	printerId = matchObject.group(1);
+	printer = _dataBase.getPrinter(printerId);
+	if printer == None:
+		return errorMessageResponse(500, "Cannot Find Printer With Id \"{0}\"".format(printerId))
+	elif printer.getJob() == None:
+		return errorMessageResponse(500, "No Job Currently Assigned to printer \"{0}\"".format(printerId))
+	if printer.stopJob():
+		return ApiResponse(200, jsonBody={});
+	else:
+		return errorMessageResponse(500, "Error Stopping Job (Please Check Logs)".format(printerId))
 @apiHandler.endpoint("POST", "/api/printer/{id}/pause")
 def pausePrinter(method, url, body, headers, matchObject):
-	return ApiResponse();
-# @apiHandler.endpoint("POST", "/api/printer/{id}/resume")
-# def resumePrinter(method, url, body, headers, matchObject):
-# 	return ApiResponse();
+	printerId = matchObject.group(1);
+	printer = _dataBase.getPrinter(printerId);
+	if printer == None:
+		return errorMessageResponse(500, "Cannot Find Printer With Id \"{0}\"".format(printerId))
+	elif printer.getJob() == None:
+		return errorMessageResponse(500, "No Job Currently Assigned to printer \"{0}\"".format(printerId))
+	if printer.pauseJob():
+		return ApiResponse(200, jsonBody={});
+	else:
+		return errorMessageResponse(500, "Error Pausing Job (Please Check Logs)".format(printerId))
 @apiHandler.endpoint("POST", "/api/printer/{id}/rawGcode")
 def sendRawGcodeToPrinter(method, url, body, headers, matchObject):
 	data = fromJsonString(body);
@@ -188,43 +212,35 @@ def newJob(method, url, body, headers, matchObject):
 def getJobLog(method, url, body, headers, matchObject):
 	return ApiResponse();
 @apiHandler.endpoint("POST", "/api/job/{id}/gcode") #Submit GCode To Job
-def getJobLog(method, url, body, headers, matchObject):
-	response = ApiResponse(code=500)
-	f = open("./gcode/forJob-" + matchObject.group(1) +".json", "w" );
-	if(header["Content-Type"] == "application/json"):
+def setJobGcode(method, url, body, headers, matchObject):
+	response = errorMessageResponse(500, "Unrecognized Parameters")
+	f = open("./gcode/forJob-" + matchObject.group(1) +".gcode", "w" );
+	contentType = headers["content-type"].split(';')[0];
+	if(contentType == "application/json"):
 		data = json.loads(body);
 		if "rawData" in data:
 			f.write(data["rawData"]);
-			response.setCode(200);
+			response = ApiResponse(code=200)
 		elif "gcodeList" in data:
 			for g in data["gcodeList"]:
 				f.write(g + "\n");
-			response.setCode(200);
-	elif (header["Content-Type"] == "application/x-www-form-urlencoded"):
-		f.write(""); #TODO: properly Decode this to recieve a file
+			response = ApiResponse(code=200);
+	elif (contentType == "application/x-www-form-urlencoded"):
+		f.write(body); #TODO: properly Decode this to recieve a file
+	elif (contentType == "multipart/form-data"):
+		data = parseFormData(body, headers);
+		if data != None:
+			if "file" in data:
+				f.write(data["file"]["data"]);
 	f.close();
 	return response;
 @apiHandler.endpoint("DELETE", "/api/job/{id}")
 def deleteJobInfo(method, url, body, headers, matchObject):
 	return ApiResponse(code=(200 if getDataBase().deleteJob() else 500));
 
-# @apiHandler.endpoint("POST", "/api/sendRawCommand")
-# def sendRawCommand(method, url, body, headers, matchObject):
-# 	response = ApiResponse();
-# 	data = json.loads(body);
-# 	cmdRes = printer.sendCmd(data["command"]);
-# 	res = {"data":cmdRes["data"]};
-# 	response.setCode(200 if cmdRes["ok"] else 500);
-# 	response.setBody(json.dumps(res));
-# 	response.setHeader('Content-type', 'application/json');
-# 	return response;
-
-			
-# printer = PrinterProtocol(port=port, baud=baud, timeout=0.5);
+# Main Program Loop			
 def main(args):
-
 	PORT_NUMBER = int(args.getValue("http_port", 8080));
-
 	try:
 		#Create a web server and define the handler to manage the
 		#incoming request

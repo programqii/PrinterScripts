@@ -19,7 +19,46 @@ mimeTypes = {
 	".csv":"text/csv",
 	".mdown":"text/markdown"
 }
-
+# Example Post Data
+# (POST)Match: POST /api/job/{id}/gcode
+# Request Headers: 
+# 	content-length == 348
+# 	accept == */*
+# 	user-agent == curl/7.43.0
+# 	host == localhost:8080
+# 	expect == 100-continue
+# 	content-type == multipart/form-data; boundary=------------------------4f74c8d07acdd453
+# Request body: 
+# --------------------------4f74c8d07acdd453
+# Content-Disposition: form-data; name="file"; filename="test.gcode"
+# Content-Type: application/octet-stream
+#
+# ; Test Gcode File to send to server
+# ; ANother Line
+# --------------------------4f74c8d07acdd453
+# Content-Disposition: form-data; name="param2"
+#
+# p
+# --------------------------4f74c8d07acdd453--
+def parseFormData(body, headers):
+	if headers["content-type"].split(';')[0] != "multipart/form-data":
+		return None;
+	boundry = headers["content-type"].split('; boundry=')[1];
+	ret = {}
+	for i in body.split(boundry + "\n")[1:-1]: #Beginning Should be "" and ending should be "--"
+		contentStart = re.search(r'\n\n', i).start() + 2;
+		name = "";
+		headers = {};
+		for k in i[:(contentStart-2)].split("\n"): #Header Lines
+			headerName = re.match(r'[^:]*: ', k)[:-2];
+			headers[headerName] = k[(len(headerName) +2):];
+			if headerName == "Content-Disposition":
+				for m in k[(len(headerName) +2):].split("; ")[1:]:
+					if m.split("=")[0] == "name":
+						name = m.split("=")[1][1:-1]; #removes quotes as well
+						ret[name] = {"data": i[contentStart:], "headers": headers};
+	# Ex: {"file": {"data": "Actual Value from Form", "headers":{"Content-Disposition":"form-data", "Content-Type":"application/octet-stream"}}}
+	return ret;
 def errorMessageResponse(code, errorMessage):
 	return ApiResponse(code=code, jsonBody={"errorMessage": errorMessage });
 
@@ -59,6 +98,12 @@ class RequestHandler:
 			m = endPoint["pathRegex"].match(url) 
 			if m:
 				print ("(" + method +")Match: "  + endPoint["method"] + " " + endPoint["urlExpr"])
+				print ("Request Headers: ");
+				for i in headers:
+					print ("\t" + i + " == " + headers[i]);
+				if body != None:
+					print ("Request body: ");
+					print (body)
 				return endPoint["callBack"](method, url, body, headers, m);
 		return None;
 	def endpoint(self, method, urlExpr):

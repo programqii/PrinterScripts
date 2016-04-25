@@ -28,6 +28,9 @@ Basic WIP Server for Manipulating the printer, it can recieve raw G-code and sen
 
 ## Endpoints
 
+# GET /static/.*
+Get File Listed under "./http/static" 
+
 # POST /api/printer/{printerId}/rawGcode 
 Send Raw Gcode to printer (even while in the middle of a print/job)
 *Post Body:* 
@@ -76,10 +79,10 @@ Update/Set the current job for the specified printer (Note: Does not automatical
 # GET /api/printer/{printerId}/status (NOT IMPLEMENTED)
 Get the current Status of the specified printer
 
-# POST /api/printer/{printerId}/start (NOT IMPLEMENTED)
+# POST /api/printer/{printerId}/start 
 Start/Resume Current Print Job on specified printer
 
-# POST /api/printer/{printerId}/stop (NOT IMPLEMENTED)
+# POST /api/printer/{printerId}/stop
 Stop / Cancel Current Print Job on printer 
 
 # POST /api/printer/{id}/pause
@@ -99,7 +102,7 @@ Create A new Job
 Get Log data from Specified Job
 
 # POST /api/job/{jobId}/gcode
-Set Gcode to Run when job is executed
+Set Gcode to Run when job is executed (Note: on the server it will create a "./gcode/forJob-{jobId}.json" file)
 *Request Body:* ```{"rawData": <String> - Raw Text from gcode file}```
 *Request Body:* ```{"gcodeList": <Array of Strings> - Gcode Lines to execute}```
 
