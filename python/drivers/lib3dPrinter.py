@@ -37,19 +37,6 @@ class MarlinPrinterProtocol:
 			self._log("From Printer: " + s[:-1]);
 			return lines;
 	def readUntilOkOrError(self):
-		while True:
-			s = self.mCommPort.readline();
-			if s.find(":") > -1:
-				tag = s[:s.find(":")];
-			else:
-				tag = "";
-			if s.lower() == "ok\n":
-				return True;
-			if(s != ''):
-				self._log("From Printer: " + s[:-1]);
-			if tag.lower() == "error":
-				return False;
-	def readUntilOkOrError(self):
 		lines = [];
 		while True:
 			s = self.mCommPort.readline();

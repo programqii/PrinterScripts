@@ -130,7 +130,7 @@ def getPrinterStatus(method, url, body, headers, matchObject):
 		"state":"Idle" #One of "Idle", "Job Ready"(job assigned but not started), "Running", "Paused", "Off", "Error", etc.
 	}
 	return ApiResponse(200, jsonBody=statusObj);
-@apiHandler.endpoint("GET", "/api/printer/{id}/start")
+@apiHandler.endpoint("POST", "/api/printer/{id}/start")
 def getPrinterStatus(method, url, body, headers, matchObject):
 	return ApiResponse();
 @apiHandler.endpoint("POST", "/api/printer/{id}/stop")
@@ -139,9 +139,9 @@ def stopPrinter(method, url, body, headers, matchObject):
 @apiHandler.endpoint("POST", "/api/printer/{id}/pause")
 def pausePrinter(method, url, body, headers, matchObject):
 	return ApiResponse();
-@apiHandler.endpoint("POST", "/api/printer/{id}/resume")
-def resumePrinter(method, url, body, headers, matchObject):
-	return ApiResponse();
+# @apiHandler.endpoint("POST", "/api/printer/{id}/resume")
+# def resumePrinter(method, url, body, headers, matchObject):
+# 	return ApiResponse();
 @apiHandler.endpoint("POST", "/api/printer/{id}/rawGcode")
 def sendRawGcodeToPrinter(method, url, body, headers, matchObject):
 	data = fromJsonString(body);
@@ -155,10 +155,15 @@ def sendRawGcodeToPrinter(method, url, body, headers, matchObject):
 	elif printer.commProtocol == None:
 		return errorMessageResponse(500, "Printer Not Properly Set up: commProtocol == None");
 	else:
-		response = []; #Note: Need to Make this more Async/Non-Blocking to other threads/Requests
+		responseFromPrinter = []; #Note: Need to Make this more Async/Non-Blocking to other threads/Requests
+		linesExecuted = 0;
 		for i in data["gcode"]:
-			response += printer.commProtocol.sendCmd(i);
-		return ApiResponse(200, jsonBody={"printerResponse":response});
+			linesExecuted += 1;
+			gcodeResponse = printer.commProtocol.sendCmd(i);
+			responseFromPrinter += gcodeResponse["data"];
+			if not gcodeResponse["ok"]:
+				return ApiResponse(200, jsonBody={"printerResponse":responseFromPrinter, "ok":False, "linesExecuted": linesExecuted});
+		return ApiResponse(200, jsonBody={"printerResponse":responseFromPrinter, "ok":True, "linesExecuted": linesExecuted});
 
 # Info About Varrious Print-Jobs that have been Sceduled
 @apiHandler.endpoint("GET", "/api/jobs")
