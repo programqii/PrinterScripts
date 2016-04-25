@@ -125,7 +125,7 @@ in requests to update varrious Stuctures (Jobs, Configurations, etc.) it will al
 
 ### Stuctures Available 
 
-*vector* - For Storaing Points in Space (2d or 3d)
+*vector* - For Storeing Points in Space (2d or 3d)
 ```
 {
 	"__type": "vector",
