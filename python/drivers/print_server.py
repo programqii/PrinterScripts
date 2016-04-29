@@ -6,7 +6,7 @@ args = ArgsParse();
 
 baud = args.getValue("baud", 115200);
 port = args.getValue("port", '/dev/ttyACM0');
-#port = args.getValue("port", '/dev/tty.usbmodem1411'); //mac serial port
+#port = args.getValue("port", '/dev/tty.usbmodem1411'); #mac serial port
 
 PORT_NUMBER = int(args.getValue("http_port", 8081));
 
