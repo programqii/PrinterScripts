@@ -223,7 +223,7 @@ class PrinterObject:
 			return None;
 	def getCurrentJob(self):
 		if self._dataBase != None:
-			return _dataBase.getJob(self.currentJobId);
+			return self._dataBase.getJob(self.currentJobId);
 		else:
 			return None;
 	def _getThread(self):
