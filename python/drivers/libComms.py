@@ -23,7 +23,7 @@ class ComPortWrapper:
 	def open(self):
 		if self.mHandle == None:
 			self.close();
-		self.logger.logInfo("Opening Serial Port "+ self.mPort + " @ "+ self.mBaud + " baud");
+		self.logger.logInfo("Opening Serial Port "+ str(self.mPort) + " @ "+ str(self.mBaud) + " baud");
 		self.mHandle = serial.Serial(self.mPort, self.mBaud, timeout=self.mTimeout);
 		return self.mHandle != None;
 	def isOpen(self):
