@@ -229,6 +229,7 @@ class PrinterObject:
 	def _getThread(self):
 		if self.threadInfo == None:
 			self.threadInfo = PrinterThread(self);
+		return self.threadInfo;
 	def startJob(self):
 		job = self.getCurrentJob();
 		if job != None and job.state in ["New"]:
