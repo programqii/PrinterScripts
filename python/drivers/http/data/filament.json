@@ -1,0 +1,28 @@
+{
+	"manufacturers":[
+		{
+			"id":"Mfr001",
+			"brand":"Gizmo Dorks",
+			"partNumber":"HY-ABS-300-TRA",
+			"upc":"887503123746",
+			"purchaseLink": "http://www.amazon.com/Gizmo-Dorks-Filament-Printers-Transparent/dp/B00GU2FZQQ/ref=pd_rhf_ee_s_cp_10?ie=UTF8&dpID=41OqOCUuY8L&dpSrc=sims&preST=_SL500_SR135%2C135_&refRID=0R6GA1YTM0JEBKTFCT9A",
+			"materialType":"ABS",
+			"color":"Transparent",
+			"cost":"$24.95",
+			"amount":"1kg",
+			"size":3,
+			"bedTemp": 110,
+			"extruderTemp": 220
+		}
+	],
+	"spools":[
+		{
+			"uuid":"blahblahBlah001",
+			"manufacturer":"Mfr001",
+			"size":3,
+			"bedTemp":110,
+			"extruderTemp":220,
+			"estimatedFilamentLeft":20000000
+		}
+	],
+}

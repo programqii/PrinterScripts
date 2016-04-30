@@ -1,3 +1,7 @@
+## Setup / Non-standard libraries used
+
+* pyserial - to install run: "pip install pyserial"
+
 ## Basic description of scripts/Files
 
 * Printer3DLib.py - Python Library built of of code that could be easily re-usable
@@ -22,11 +26,161 @@ the program will Show all Data being sent to and recieved from the printer (It's
 ### print_server.py
 Basic WIP Server for Manipulating the printer, it can recieve raw G-code and send it to the printer.
 
-it only has one *real* endpont
+## Endpoints
 
-# POST "/sendRawCommand"
-*Post Body:* ```{"command":"Your Gcode Command Here"}```
-*Response Body:* ```{"data":["response Lines/data Here(if any)"]}```
+### GET /static/.*
+Get File Listed under "./http/static" 
 
-*Note:* The enpoint will not return until the Printer Has Acknologed the command (Ex: "Wait until Temp reached" will not return with a response unitl the temprature is reached)
+### POST /api/printer/{printerId}/rawGcode 
+Send Raw Gcode to printer (even while in the middle of a print/job)
+*Post Body:* 
+```
+{
+	"gcode": <Array of Strings> - The list of Gcode(s)/Commands To Execute on the printer
+}
+```
+*Response Body:* 
+```
+{
+	"printerResponse": <Array Of Strings>  - Response Lines from printer,
+	"ok": <boolean> - Any Errors returnd from printer? (True -> No Errors)
+	"linesExecuted": <Integer> - Number Of Lines Excuted before Error
+}
+```
+*Note:* The enpoint will not return until the Printer Has Acknologed all commands sent (Ex: "Wait until Temp reached" will not return with a response unitl the temprature is reached)
+
+### GET /api/printers
+List the configured printers on the server
+
+*Response Body:* <Array of strings> - the PrinterIds available on server
+
+### POST /api/printers/new
+Create a new printer (With Default/dummy Info) and return it's ID
+
+### GET /api/printer/{printerId}
+Get the specified printers Configuration
+
+### DELETE /api/printer/{printerId}
+Delete The specified Printer Configuration
+
+### POST /api/printer/{printerId}
+Update The specified printers configuration (Note Current Job Id Cannot be updated/changed from this endpoint )
+
+### POST /api/printer/{printerId}/job
+Update/Set the current job for the specified printer (Note: Does not automatically start Print)
+
+*Post Body:* 
+```
+{ 
+	"jobId": <String> - Id of the Job you wish to assign to this printer
+}
+```
+
+### GET /api/printer/{printerId}/status (NOT IMPLEMENTED)
+Get the current Status of the specified printer
+
+### POST /api/printer/{printerId}/start 
+Start/Resume Current Print Job on specified printer
+
+### POST /api/printer/{printerId}/stop
+Stop / Cancel Current Print Job on printer 
+
+### POST /api/printer/{printerId}/pause
+Pause Current Print job
+
+### GET /api/jobs
+Get All JobIDs Currently available on server
+
+*Response Body:* Arrays Of strings containing "JobIds"
+
+### POST /api/jobs/new
+Create A new Job
+
+*Response Body:* ID of newly created job
+
+### GET /api/job/{jobId}/log (NOT IMPLEMENTED)
+Get Log data from Specified Job
+
+### POST /api/job/{jobId}/gcode
+Set Gcode to Run when job is executed (Note: on the server it will create a "./gcode/forJob-{jobId}.json" file)
+*Request Body:* ```{"rawData": <String> - Raw Text from gcode file}```
+*Request Body:* ```{"gcodeList": <Array of Strings> - Gcode Lines to execute}```
+
+### DELETE /api/job/{jobId}
+Delete Specified Job & releated Data (Ex: Log files, stored g-code, etc.)
+
+
+## "Object Stuctures" in Json Data Sent / Returned
+
+### Generic Structure
+
+``` 
+{
+	"__type":"myObjectType"	
+}
+```
+
+in requests to update varrious Stuctures (Jobs, Configurations, etc.) it will always be created with basic/default values that will be returned as "Null" when queried/Read for example if i wanted to know what structure of the "SquareShape" object that I'm passing as a paramter to the printer I would just need to set the value to ```{"__type":"SquareShape"}``` and re-query the printer configuration to see the default values of a "SquareShape" (or just initalize it the default "SquareShape")
+
+
+### Stuctures Available 
+
+*vector* - For Storeing Points in Space (2d or 3d)
+```
+{
+	"__type": "vector",
+	"data": [
+		<Float>,
+		<Float>,
+		<Float>
+	]
+}
+```
+
+*JobObject* - Stores the Configuration Data for a specific Job
+```
+{
+	"__type": "JobObject",
+	"estimatedTime": <Float> - (NOT IMPLEMETED) Time In seconds it will take Job to finish
+	"fileOffset": <Integer> - Current Place in file that the job is currently at
+	"gcodeFilePath": <String/File Path> - Path to File Containing the G-Code fo this Job
+	"linesProcessed": <Integer> - Current Count of the Current number of lines in g-code file that have been sent to the printer
+	"logfile": <String/File Path> - Path to the Jobs Logfile,
+	"name": <String> - (Not Used) the Jobs "Human Friendly" Name
+	"printerId": <String> - Id of the Printer that this job has/will execute on
+	"progress": <Float: 0.0-1.0> - Percent Complete of job
+	"startedTime": <String> - Time Stamp of when Job Was Started
+	"state": <One of: "New", "Stopped", "Paused", "Running", "Waiting", "Done"> - Current "State" of the job
+}
+```
+
+*PrinterObject* - Config for a printer
+```
+{
+	"__type": "PrinterObject",
+	"commProtocol": <"MockComPortWrapper" or "ComPortWrapper" Object >,
+	"currentJobId": <String/Null> - Currently Assigned Job (Null indicated no job assigned/last job complete/stopped)
+	"name": <String> - "Human Friendly" Name of the printer
+	"printBedPlaneRange": <Array of 2 "vector" objects> - (Not Implemented) Area Where the print bed resides
+	"printHeadRange": <Array of 2 "vector" objects> - (Not Implements) Min/Max Area where the print head can move
+	"spoolId": <String> - Id of the Spool Currently Attached to the printer
+}
+```
+
+*MockComPortWrapper* - a "Mock" Communications Port that accepts all commands instantly (with no response)
+```
+{
+	"__type": "MockComPortWrapper"
+}
+```
+
+*ComPortWrapper* - Represents a real serial port connection
+```
+{
+	"__type": "ComPortWrapper",
+	"mBaud": <Integer> - the baud rate in bits/sec (Ex: 115200)
+	"mPort": <String/FilePath> - Path to the device file of the serial port
+	"mTimeout": <Float> - Communication Timeout (How long to wait for a response from the printer, if it's not sending back data)
+}
+```
 

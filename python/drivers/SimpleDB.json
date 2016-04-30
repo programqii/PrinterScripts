@@ -1,0 +1,244 @@
+{
+    "__type": "SimplePrinterDB",
+    "jobs": {
+    },
+    "printers": {
+        "printer-af5742ca-083d-11e6-bbfc-f45c898f3b77": {
+            "__type": "PrinterObject",
+            "commProtocol": null,
+            "currentJobId": null,
+            "name": "Last Printer",
+            "printBedPlaneRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        20.0,
+                        20.0,
+                        0.0
+                    ]
+                }
+            ],
+            "printHeadRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        200.0,
+                        200.0,
+                        200.0
+                    ]
+                }
+            ],
+            "spoolId": null
+        },
+        "printer-b6eb9e23-0846-11e6-b3b2-f45c898f3b77": {
+            "__type": "PrinterObject",
+            "commProtocol": {
+                "__type": "MarlinPrinterProtocol",
+                "mCommPort": null
+            },
+            "currentJobId": null,
+            "name": "Dummy Printer",
+            "printBedPlaneRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        20.0,
+                        20.0,
+                        0.0
+                    ]
+                }
+            ],
+            "printHeadRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        200.0,
+                        200.0,
+                        200.0
+                    ]
+                }
+            ],
+            "spoolId": null
+        },
+        "printer-b77e0e59-0846-11e6-be2b-f45c898f3b77": {
+            "__type": "PrinterObject",
+            "commProtocol": null,
+            "currentJobId": null,
+            "name": "Another Printer",
+            "printBedPlaneRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        20.0,
+                        20.0,
+                        0.0
+                    ]
+                }
+            ],
+            "printHeadRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        200.0,
+                        200.0,
+                        200.0
+                    ]
+                }
+            ],
+            "spoolId": null
+        },
+        "printer-b9cf5eb3-0846-11e6-b2bd-f45c898f3b77": {
+            "__type": "PrinterObject",
+            "commProtocol": {
+                "__type": "MarlinPrinterProtocol",
+                "mCommPort": {
+                    "__type": "ComPortWrapper",
+                    "mBaud": 115200,
+                    "mPort": "/dev/ttyACM0",
+                    "mTimeout": 0.5
+                }
+            },
+            "currentJobId": null,
+            "name": "Printer With real Com-port",
+            "printBedPlaneRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        20.0,
+                        20.0,
+                        0.0
+                    ]
+                }
+            ],
+            "printHeadRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        200.0,
+                        200.0,
+                        200.0
+                    ]
+                }
+            ],
+            "spoolId": null
+        }
+    },
+    "printer-kevins-printer": {
+            "__type": "PrinterObject",
+            "commProtocol": {
+                "__type": "MarlinPrinterProtocol",
+                "mCommPort": {
+                    "__type": "ComPortWrapper",
+                    "mBaud": 115200,
+                    "mPort": "/dev/tty.usbmodem1411",
+                    "mTimeout": 0.5
+                }
+            },
+            "currentJobId": null,
+            "name": "Kevin's Printer",
+            "printBedPlaneRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        20.0,
+                        20.0,
+                        0.0
+                    ]
+                }
+            ],
+            "printHeadRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        200.0,
+                        200.0,
+                        200.0
+                    ]
+                }
+            ],
+            "spoolId": null
+        }
+    },
+    "spoolManufacturers": {},
+    "spools": {}
+}

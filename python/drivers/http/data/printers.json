@@ -1,0 +1,27 @@
+[
+	{
+		"type":"PrinterSetup",
+		"mName":"Jake's 3d Printer",
+		"mGCodeFlavor":{"type":"RepRap"},
+		"mProtocol":{
+			"type":"MarlinPrinterProtocol", 
+			"commPort":{"type": "ComPortWrapper", "mPort":"/dev/ttyACM0", "mBaud":115200, "mTimeout":1.0}
+		},
+		"mExtruders":[
+			{
+				"type":"GenericExtruder",
+				"mName":"Extruder01",
+				"mFilament":"SpoolID_1234",
+				"mNozzleSize":0.1,
+				"mGeomety":{},
+			}
+		],
+		"mBedGeometry":{
+			"min":{"x": 0.1, "y": 0.1, "z":0.1},
+			"max":{"x": 200, "y": 200, "z":0.2},
+			"blackList":[
+				{"min":{"x": 0.5, "y": 0.1, "z":0.1}, "max":{"x": 0.7, "y": 0.7, "z":0.1} }
+			]
+		}
+	}
+]
