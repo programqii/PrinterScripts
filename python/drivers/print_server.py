@@ -113,6 +113,17 @@ def setPrinterInfo(method, url, body, headers, matchObject):
 		printer.currentJobId = data["jobId"]; #TODO: if job was has already been executed OR job is being executed on another printer -> Copy Job and return a new ID
 		job.printerId = matchObject.group(1);
 		return ApiResponse(code=200, jsonBody={"jobId": data["jobId"]});
+@apiHandler.endpoint("GET", "/api/printer/{id}/job")
+def setPrinterInfo(method, url, body, headers, matchObject):
+	printer = getDataBase().getPrinter(matchObject.group(1));
+	if printer == None:
+		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject.group(1)));
+	elif printer.currentJobId == None:
+		return errorMessageResponse(404, "No Job assigned to printer \"{0}\"".format(matchObject.group(1)));
+	else:
+		printer.currentJobId = data["jobId"]; #TODO: if job was has already been executed OR job is being executed on another printer -> Copy Job and return a new ID
+		job.printerId = matchObject.group(1);
+		return ApiResponse(code=200, jsonBody={"jobId": printer.currentJobId, "job":printer.getCurrentJob()});
 @apiHandler.endpoint("GET", "/api/printer/{id}/status")
 def getPrinterStatus(method, url, body, headers, matchObject):
 	statusObj = {
