@@ -108,13 +108,16 @@ class PrinterThread(threading.Thread):
 		if self.job.state in ["Stopped", "Done"]:
 			self.job = None;
 		self._jobLock =  threading.Semaphore();
+		self.logger = ConsoleLoggerFactory().buildLogger("PrinterThread");
 		# self._runningLock =  threading.Semaphore();
 		# self._runningLock.acquire();
 	def _getNextJobCmd(self):
 		with BeginEnd(self._jobLock.acquire, self._jobLock.release) as aLock:
 			if self.job == None or self.job.state != "Running":
+				self.logger.logVerbose("_getNextJobCmd: No Job or not in running state")
 				return None;
 			cmd = self.job.getNextCommand();
+			self.logger.logVerbose("_getNextJobCmd: " + (cmd if cmd != None else "None"))
 			if cmd == None:
 				self.job.state = "Done";
 				self.job = None;
@@ -128,15 +131,17 @@ class PrinterThread(threading.Thread):
 		data["result"] = [];
 		index = 0;
 		while not self.shutdownRequest.isSet() and index < len(data["cmds"]):
+			self.logger.logVerbose("Running RAW Command: " + data["cmds"][index])
 			data["result"] += comm.sendCmd(data["cmds"][index]);
 			index += 1;
 		data["resultLock"].release();
 	def run(self):
 		comm = self.parentPrinterObject.commProtocol;
 		if comm == None:
-			print("No Comm Protocol, quitting");
+			self.logger.logVerbose("No Comm Protocol, quitting");
 			# self._runningLock.release();
 			return ;
+		self.logger.logVerbose("Opening commProtocol");
 		comm.open();
 		while not self.shutdownRequest.isSet():
 			self._runRawCommands();
@@ -144,10 +149,14 @@ class PrinterThread(threading.Thread):
 				# TODO: Add Command Timing (To know how long a comand will take to run) and transformation (Ex: G-Code <0,0,0> != Printer <0,0,0> )
 				cmd = self._getNextJobCmd();
 				if cmd == None:
+					self.logger.logVerbose("No Job Commands Sleeping.")
 					time.sleep(0.1);
 				else:
+					self.logger.logVerbose("Sending Job Command: " + cmd)
 					comm.sendCmd(cmd);
+		self.logger.logVerbose("closeing commProtocol");
 		comm.close();
+		self.logger.logVerbose("Exit Thread");
 		# self._runningLock.release();
 	def runRawCommands(self, rawCommandList=[]):
 		# Note: might convrt This into a Queue of Queues so that individual rawCmd Requests return once they are complete.
