@@ -95,17 +95,7 @@ def deletePrinterInfo(method, url, body, headers, matchObject):
 # @apiHandler.endpoint("GET", "/api/printer/{id}/ini_config")
 # def getPrinterConfigAsIni(method, url, body, headers, matchObject):
 # 	return ApiResponse();
-@apiHandler.endpoint("POST", "/api/printer/{id}")
-def setPrinterInfo(method, url, body, headers, matchObject):
-	response = ApiResponse();
-	printer = getDataBase().getPrinter(matchObject.group(1));
-	if printer == None:
-		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject.group(1)));
-	elif printer.currentJobId != None:
-		return errorMessageResponse(500, "Cannot update printer \"{0}\" because it is currently assigned job \"{1}\"".format(matchObject.group(1), printer.currentJobId));
-	else:
-		printer.updateFromJson(json.loads(body), blackList=["currentJobId"]); # Do Not allow the assignemnt of jobs through this endpoint 
-		return ApiResponse(code=200, jsonBody=printer);
+
 @apiHandler.endpoint("POST", "/api/printer/{id}/job")
 def setPrinterInfo(method, url, body, headers, matchObject):
 	data = fromJsonString(body);
@@ -188,7 +178,18 @@ def sendRawGcodeToPrinter(method, url, body, headers, matchObject):
 			if not gcodeResponse["ok"]:
 				return ApiResponse(200, jsonBody={"printerResponse":responseFromPrinter, "ok":False, "linesExecuted": linesExecuted});
 		return ApiResponse(200, jsonBody={"printerResponse":responseFromPrinter, "ok":True, "linesExecuted": linesExecuted});
-
+@apiHandler.endpoint("POST", "/api/printer/{id}")
+def setPrinterInfo(method, url, body, headers, matchObject):
+	response = ApiResponse();
+	printer = getDataBase().getPrinter(matchObject.group(1));
+	if printer == None:
+		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject.group(1)));
+	elif printer.currentJobId != None:
+		return errorMessageResponse(500, "Cannot update printer \"{0}\" because it is currently assigned job \"{1}\"".format(matchObject.group(1), printer.currentJobId));
+	else:
+		printer.updateFromJson(json.loads(body), blackList=["currentJobId"]); # Do Not allow the assignemnt of jobs through this endpoint 
+		return ApiResponse(code=200, jsonBody=printer);
+		
 # Info About Varrious Print-Jobs that have been Sceduled
 @apiHandler.endpoint("GET", "/api/jobs")
 def getJobs(method, url, body, headers, matchObject):

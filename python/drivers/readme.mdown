@@ -85,7 +85,7 @@ Start/Resume Current Print Job on specified printer
 ### POST /api/printer/{printerId}/stop
 Stop / Cancel Current Print Job on printer 
 
-### POST /api/printer/{id}/pause
+### POST /api/printer/{printerId}/pause
 Pause Current Print job
 
 ### GET /api/jobs
