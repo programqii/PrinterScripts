@@ -143,6 +143,7 @@ class PrinterThread(threading.Thread):
 			return ;
 		self.logger.logVerbose("Opening commProtocol");
 		comm.open();
+		self.logger.logVerbose("commProtocol Opened");
 		while not self.shutdownRequest.isSet():
 			self._runRawCommands();
 			if not self.shutdownRequest.isSet():
