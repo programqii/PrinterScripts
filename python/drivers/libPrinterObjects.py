@@ -141,7 +141,7 @@ class PrinterThread(threading.Thread):
 			self.logger.logVerbose("No Comm Protocol, quitting");
 			# self._runningLock.release();
 			return ;
-		self.logger.logVerbose("Opening commProtocol");
+		self.logger.logVerbose("Opening commProtocol ({0})".format(comm.__class__.__name__));
 		comm.open();
 		self.logger.logVerbose("commProtocol Opened");
 		while not self.shutdownRequest.isSet():
