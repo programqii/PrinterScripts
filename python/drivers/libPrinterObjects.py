@@ -299,9 +299,9 @@ class JobObject:
 		if self._loggerFactory != None:
 			return self._loggerFactory;
 		if self.logfile != None:
-			self._loggerFactory = FileLoggerFactory(self.logfile);
+			self._loggerFactory = TeeLoggerFactory(factories=[FileLoggerFactory(self.logfile), ConsoleLoggerFactory()]);
 		else:
-			self._loggerFactory = NullLoggerFactory();
+			self._loggerFactory = ConsoleLoggerFactory();
 		return self._loggerFactory;
 	def getPrinter(self):
 		if self._dataBase != None:

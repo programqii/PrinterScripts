@@ -1,7 +1,23 @@
 
 import time
 import datetime
-
+class TeeLoggerFactory:
+	def __init__(self, factories=[]):
+		self.factories = factories;
+	def buildLogger(self, tag):
+		return TeeLogger(loggers=[x.buildLogger(tag) for x in self.factories]);
+class TeeLogger:
+	def __init__(self, loggers=[]):
+		self.loggers = loggers;
+	def log(self, message, level=""):
+		for i in self.loggers:
+			i.log(message, level);
+	def logError(self, message):
+		self.log(message=message, level="Error");
+	def logInfo(self, message):
+		self.log(message=message, level="Info");
+	def logVerbose(self, message):
+		self.log(message=message, level="Verbose");
 # globalLoggerFactory = LoggerFactory();
 # def buildLogger(tag):
 # 	global globalLoggerFactory;
