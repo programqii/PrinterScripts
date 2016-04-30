@@ -126,7 +126,7 @@ def getPrinterStatus(method, url, body, headers, matchObject):
 	printer = _dataBase.getPrinter(printerId);
 	if printer == None:
 		return errorMessageResponse(500, "Cannot Find Printer With Id \"{0}\"".format(printerId))
-	elif printer.getJob() == None:
+	elif printer.getCurrentJob() == None:
 		return errorMessageResponse(500, "No Job Currently Assigned to printer \"{0}\"".format(printerId))
 	if printer.startJob():
 		return ApiResponse(200, jsonBody={});
@@ -138,7 +138,7 @@ def stopPrinter(method, url, body, headers, matchObject):
 	printer = _dataBase.getPrinter(printerId);
 	if printer == None:
 		return errorMessageResponse(500, "Cannot Find Printer With Id \"{0}\"".format(printerId))
-	elif printer.getJob() == None:
+	elif printer.getCurrentJob() == None:
 		return errorMessageResponse(500, "No Job Currently Assigned to printer \"{0}\"".format(printerId))
 	if printer.stopJob():
 		return ApiResponse(200, jsonBody={});
@@ -150,7 +150,7 @@ def pausePrinter(method, url, body, headers, matchObject):
 	printer = _dataBase.getPrinter(printerId);
 	if printer == None:
 		return errorMessageResponse(500, "Cannot Find Printer With Id \"{0}\"".format(printerId))
-	elif printer.getJob() == None:
+	elif printer.getCurrentJob() == None:
 		return errorMessageResponse(500, "No Job Currently Assigned to printer \"{0}\"".format(printerId))
 	if printer.pauseJob():
 		return ApiResponse(200, jsonBody={});
@@ -162,8 +162,8 @@ def sendRawGcodeToPrinter(method, url, body, headers, matchObject):
 	printer = getDataBase().getPrinter(matchObject.group(1));
 	if printer == None:
 		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject.group(1)));
-	elif printer.currentJobId != None:
-		return errorMessageResponse(500, "Cannot Execute G-Code, printer is currently assigned job \"{1}\" which must be stopped first".format(printer.currentJobId));
+	# elif printer.getCurrentJob() != None:
+	# 	return errorMessageResponse(500, "Cannot Execute G-Code, printer is currently assigned job \"{1}\" which must be stopped first".format(printer.currentJobId));
 	elif not ("gcode" in data) and isinstance(data["gcode"], list):
 		return errorMessageResponse(500, 'Bad Request body, must have a format of: {"gcode":["Gcode Line1", "Gcode Line 2", ... ]}');
 	elif printer.commProtocol == None:
@@ -184,12 +184,12 @@ def setPrinterInfo(method, url, body, headers, matchObject):
 	printer = getDataBase().getPrinter(matchObject.group(1));
 	if printer == None:
 		return errorMessageResponse(404, "Cannot find printer \"{0}\"".format(matchObject.group(1)));
-	elif printer.currentJobId != None:
+	elif printer.getCurrentJob() != None:
 		return errorMessageResponse(500, "Cannot update printer \"{0}\" because it is currently assigned job \"{1}\"".format(matchObject.group(1), printer.currentJobId));
 	else:
 		printer.updateFromJson(json.loads(body), blackList=["currentJobId"]); # Do Not allow the assignemnt of jobs through this endpoint 
 		return ApiResponse(code=200, jsonBody=printer);
-		
+
 # Info About Varrious Print-Jobs that have been Sceduled
 @apiHandler.endpoint("GET", "/api/jobs")
 def getJobs(method, url, body, headers, matchObject):
