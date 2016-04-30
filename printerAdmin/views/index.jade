@@ -1,0 +1,25 @@
+extends layout
+
+block content
+  h1= title
+  p Yo! Welcome to #{title}
+
+  div(id="status" class="statusBox")
+  div(id="rowOne")
+    span(id="connection") Connected
+    span(id="quickButtons")
+      button(class="btn primary", data-action="bea" id="autoHome").Send Auto Home
+      button(class="btn heat", data-action="bea" id="heatBed").Send Heat Bed
+      button(class="btn cool", data-action="bea" id="bedOff").Send Bed Off
+      button(class="btn heat", data-action="bea" id="heatExtruder").Send Heat Extruder
+      button(class="btn cool", data-action="bea" id="extruderOff").Send Extruder Off
+  div
+    button(class="btn cool", data-action="bea" id="Gcode").Send Gcode 
+    input(type='text', name='gCode', id='gCode', value = '') 
+  div
+     table(id='gCodeFilesTable')
+      thead
+        tr: th Files
+      tbody(id="tbody")
+      
+ 

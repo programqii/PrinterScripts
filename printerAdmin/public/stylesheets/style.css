@@ -1,0 +1,85 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+h1{
+  color: red;
+}
+
+.btn{
+    border: none;
+    padding: 10px 22px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    width: 150px;
+    margin: 5px;
+}
+
+.heat{
+    background-color: red; 
+    color: white;
+}
+
+.cool{
+    background-color: cadetblue; 
+    color: white;
+}
+
+.primary{
+    background-color: green; 
+    color: white;
+}
+
+.btn-small{
+    border: none;
+    padding: 5px 5px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    width: 70px;
+    margin: 2px;
+}
+
+#statusBox{
+    font-size: 22em;
+    height: 50px;
+    width: 100%;
+}
+
+.alert{
+    color: darkred;
+    border: 1px;
+    border-color:  darkred;
+}
+
+.info{
+    color: white;
+    border: 1px;
+    border-color:  darkgray;
+    background-color: dodgerblue;
+    padding: 15px;
+}
+
+input{
+    height:38px;
+}
+
+ #stream {
+    height: 99%;
+    margin: 0px auto;
+    display: block;
+    margin-top: 20px;
+  }
+  
+  #connection{
+    border: 1px solid red;
+    padding: 10px 22px;
+  }
