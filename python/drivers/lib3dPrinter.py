@@ -25,6 +25,7 @@ class MarlinPrinterProtocol:
 		else:
 			return False;
 	def open(self):
+		print("Marlin::: Open()")
 		if self.mCommPort != None:
 			self.logger.logVerbose("open: Opening Printer")
 			self.logger.logVerbose("open: comm Port")
