@@ -3,7 +3,7 @@ import sys
 import json
 import datetime
 from libUtils import parseWithTypes, mapPath, JsonType
-from libLogging import NullLogger
+from libLogging import *
 
 def parseCommPort(jsonNode, loggerFactory):
 	ret = parseWithTypes(jsonNode, ComPortWrapper);
@@ -15,11 +15,11 @@ class ComPortWrapper:
 		self.mBaud = baud;
 		self.mTimeout = timeout;
 		self.mHandle = None;
-		self.logger = NullLogger();
+		self.logger = ConsoleLoggerFactory().buildLogger("libComms.py->ComPortWrapper");
 	def setLoggerFactory(self, loggerFactory):
 		self.logger = loggerFactory.buildLogger("libComms.py->ComPortWrapper");
 		if self.logger == None:
-			self.logger = NullLogger();
+			self.logger = ConsoleLoggerFactory().buildLogger("libComms.py->ComPortWrapper");
 	def open(self):
 		if self.mHandle == None:
 			self.close();
