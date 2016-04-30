@@ -3,7 +3,7 @@ import json
 import datetime
 from libUtils import mapPath, parseWithTypes, JsonType
 from libComms import parseCommPort, ComPortWrapper
-from libLogging import NullLoggerFactory
+from libLogging import *
 
 def parsePrinterProtocol(jsonNode):
 	return parseWithTypes(jsonNode, MarlinPrinterProtocol);
@@ -13,9 +13,9 @@ class MarlinPrinterProtocol:
 	def __init__(self, commPort=None):
 		self.mCommPort = commPort;
 		self.errors = [];
-		self.logger = NullLoggerFactory().buildLogger("lib3dPrinter.py->MarlinPrinterProtocol");
+		self.logger = ConsoleLoggerFactory().buildLogger("lib3dPrinter.py->MarlinPrinterProtocol");
 	def setLoggerFactory(self, loggerFactory):
-		factory = loggerFactory if loggerFactory != None else NullLoggerFactory;
+		factory = ConsoleLoggerFactory() #loggerFactory if loggerFactory != None else ConsoleLoggerFactory();
 		self.logger = factory.buildLogger("lib3dPrinter.py->MarlinPrinterProtocol");
 		if self.mCommPort != None:
 			self.mCommPort.setLoggerFactory(factory);
