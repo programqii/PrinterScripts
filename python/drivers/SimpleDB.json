@@ -187,6 +187,58 @@
             "spoolId": null
         }
     },
+    "printer-kevins-printer": {
+            "__type": "PrinterObject",
+            "commProtocol": {
+                "__type": "MarlinPrinterProtocol",
+                "mCommPort": {
+                    "__type": "ComPortWrapper",
+                    "mBaud": 115200,
+                    "mPort": "/dev/tty.usbmodem1411",
+                    "mTimeout": 0.5
+                }
+            },
+            "currentJobId": null,
+            "name": "Kevin's Printer",
+            "printBedPlaneRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        20.0,
+                        20.0,
+                        0.0
+                    ]
+                }
+            ],
+            "printHeadRange": [
+                {
+                    "__type": "vector",
+                    "data": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                {
+                    "__type": "vector",
+                    "data": [
+                        200.0,
+                        200.0,
+                        200.0
+                    ]
+                }
+            ],
+            "spoolId": null
+        }
+    },
     "spoolManufacturers": {},
     "spools": {}
 }
