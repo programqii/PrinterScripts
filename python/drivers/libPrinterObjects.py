@@ -102,7 +102,7 @@ class PrinterThread(threading.Thread):
 		self.shutdownRequest = threading.Event();
 		self.rawCmdBufferQueue = Queue.Queue();
 		self.rawCmdResult = None;
-		self.job = parentPrinterObject.getCurrentJob() if self.getCurrentJob() != None else None;
+		self.job = parentPrinterObject.getCurrentJob() if parentPrinterObject.getCurrentJob() != None else None;
 		if self.job.state in ["Stopped", "Done"]:
 			self.job = None;
 		self._jobLock =  threading.Semaphore();
