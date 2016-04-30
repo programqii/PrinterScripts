@@ -40,12 +40,12 @@ class ComPortWrapper:
 		if self.mHandle != None:
 			resp = self.mHandle.read(n);
 			if resp != None:
-				resp = resp.decode('utf-8'); #TODO: Verify Encoding on Actual Marlin Hardware
+				resp = resp.decode('ascii'); #TODO: Verify Encoding on Actual Marlin Hardware
 			return resp;
 		return None;
 	def write(self, s):
 		if self.mHandle != None:
-			return self.mHandle.write(s.encode('utf-8')); #TODO: Allow for raw binary to be sent?
+			return self.mHandle.write(s.encode('ascii')); #TODO: Allow for raw binary to be sent?
 		else:
 			return None;
 	def flush(self):

@@ -32,8 +32,8 @@ class MarlinPrinterProtocol:
 			self.mCommPort.open();
 			self.logger.logVerbose("open: initial Serial Data")
 			self.printResponse();
-			self.logger.logVerbose("open: Sending Command")
-			self.sendCmd("M105"); # Read Current Temp (to make sure that The Serial Buffer is clean)
+			# self.logger.logVerbose("open: Sending Command")
+			# self.sendCmd("M105"); # Read Current Temp (to make sure that The Serial Buffer is clean)
 			self.logger.logVerbose("open: Printer Opened")
 		else:
 			self.logger.logVerbose("open: comm port is null")
@@ -61,6 +61,7 @@ class MarlinPrinterProtocol:
 			return {"ok": False, "data": lines}
 		while True:
 			s = self.mCommPort.readline();
+			self.logger.logVerbose("Read: " + s.replace("\n","\\n").replace("\r", "\\r") )
 			if s.find(":") > -1:
 				tag = s[:s.find(":")];
 			else:
@@ -75,7 +76,10 @@ class MarlinPrinterProtocol:
 	def sendCmd(self, cmd):
 		if self.mCommPort != None:
 			self.logger.logVerbose("Sending Command: " + cmd);
-			self.mCommPort.write(cmd + "\n");
+			if(cmd[-1] != "\n"):
+				self.mCommPort.write(cmd + "\n");
+			else:
+				self.mCommPort.write(cmd);
 			self.logger.logVerbose("Command Sent")
 		return self.readUntilOkOrError();
 

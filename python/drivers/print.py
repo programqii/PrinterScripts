@@ -1,12 +1,19 @@
 from lib3dPrinter import MarlinPrinterProtocol, GcodeCommandBuffer
 from libComms import ComPortWrapper, MockComPortWrapper
-from libUtils import ArgsParse, printerFromArgs
-from libLogging import buildLogger
+from libUtils import ArgsParse
+from libLogging import *
 
+
+def printerFromArgs(args):
+	return MarlinPrinterProtocol(ComPortWrapper(
+		port=args.getValue("port",'/dev/ttyACM0'), 
+		baud=int(args.getValue("baud", 115200)), 
+		timeout=float(args.getValue("timeout", 0.5)) 
+		));
 # Sends G-Code to Printer
 
 args = ArgsParse();
-logger = buildLogger("print.py")
+logger = ConsoleLoggerFactory().buildLogger("print.py")
 
 logger.logInfo("Parsing GCODE file...")
 filePath = args.getValue("file", None);
@@ -23,10 +30,10 @@ for i in commands.mLines:
 	if i["comment"] != None:
 		logger.logInfo("Comment From File: " + i["comment"]);
 	if i["cmd"] != None and len(i["cmd"]) > 0:
-		if not p.sendCmd(i["cmd"]):
+		if not printer.sendCmd(i["cmd"]):
 			logger.logError("Running Emergency Stop!!!!")
-			p.emergencyStop();
-			p.close();
+			printer.emergencyStop();
+			printer.close();
 			logger.logError("Exiting On Line: " + str(i["line"]));
 			exit(1);
 	if prevPercent != int((100*curLine) / amount):
