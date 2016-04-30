@@ -70,17 +70,20 @@ class MockComPortWrapper:
 		return ;
 	def open(self):
 		self.imOpen = True;
+		print("MockComPortWrapper: open()")
 		return self.imOpen;
 	def isOpen(self):
 		return self.imOpen;
 	def close(self):
-		self.imOpen = True;
+		print("MockComPortWrapper: close()")
+		self.imOpen = False;
 	def readline(self):
 		if self.imOpen:
 			return "OK\n";
 	def read(self, n=-1):
 		return None;
 	def write(self, s):
+		print("MockComPortWrapper: Sent - " + s)
 		return len(s);
 	def flush(self):
 		0;

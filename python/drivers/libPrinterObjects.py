@@ -5,6 +5,7 @@ from libLogging import NullLoggerFactory, FileLoggerFactory
 import threading, Queue
 import time
 
+
 # simple_db = {
 # 	"printers":{},
 # 	"spools":{},
@@ -98,6 +99,7 @@ class SimplePrinterDB:
 
 class PrinterThread(threading.Thread):
 	def __init__(self, parentPrinterObject):
+		threading.Thread.__init__(self)
 		self.parentPrinterObject = parentPrinterObject;
 		self.shutdownRequest = threading.Event();
 		self.rawCmdBufferQueue = Queue.Queue();
@@ -106,16 +108,15 @@ class PrinterThread(threading.Thread):
 		if self.job.state in ["Stopped", "Done"]:
 			self.job = None;
 		self._jobLock =  threading.Semaphore();
-		self._runningLock =  threading.Semaphore();
-		self._runningLock.acquire();
+		# self._runningLock =  threading.Semaphore();
+		# self._runningLock.acquire();
 	def _getNextJobCmd(self):
 		with BeginEnd(self._jobLock.acquire, self._jobLock.release) as aLock:
-			job = self.job;
-			if job == None or job.state != "Running":
+			if self.job == None or self.job.state != "Running":
 				return None;
-			cmd = job.getNextCmd();
+			cmd = self.job.getNextCommand();
 			if cmd == None:
-				job.state = "Done";
+				self.job.state = "Done";
 				self.job = None;
 				self.parentPrinterObject.currentJobId = None;
 			return cmd;
@@ -133,6 +134,8 @@ class PrinterThread(threading.Thread):
 	def run(self):
 		comm = self.parentPrinterObject.commProtocol;
 		if comm == None:
+			print("No Comm Protocol, quitting");
+			# self._runningLock.release();
 			return ;
 		comm.open();
 		while not self.shutdownRequest.isSet():
@@ -145,7 +148,7 @@ class PrinterThread(threading.Thread):
 				else:
 					comm.sendCmd(cmd);
 		comm.close();
-		self._runningLock.release();
+		# self._runningLock.release();
 	def runRawCommands(self, rawCommandList=[]):
 		# Note: might convrt This into a Queue of Queues so that individual rawCmd Requests return once they are complete.
 		data = {"cmds": rawCommandList, "resultLock": threading.Semaphore(), "result":None};
@@ -156,8 +159,10 @@ class PrinterThread(threading.Thread):
 	def startJob(self): # also Doubles as "resume"
 		with BeginEnd(self._jobLock.acquire, self._jobLock.release) as aLock:
 			if self.job == None:
+				print ("No Job to Start");
 				return ;
 			if self.job.state in ["Done", "Stopped"]:
+				print ("Job Already Finished")
 				self.job = None;
 				return ;
 			if self.job.state in ["New", "Running", "Paused"]:
@@ -172,7 +177,8 @@ class PrinterThread(threading.Thread):
 			if self.job != None:
 				self.job.log("Job Stopped");
 				self.job.state = "Stopped";
-				if self.job.getPrinter() != None:
+				self.parentPrinterObject.currentJobId = None;
+				if self.parentPrinterObject != None:
 					self.job.getPrinter().currentJobId = None;
 				self.job = None;
 				return True;
@@ -191,15 +197,16 @@ class PrinterThread(threading.Thread):
 		with BeginEnd(self._jobLock.acquire, self._jobLock.release) as aLock:
 			if job == self.job:
 				return ;
-			if self.job != None and self.job.state in ["Running", "Paused", "Waiting"]:
+			if self.job != None and self.job.state in ["New", "Running", "Paused", "Waiting"]:
 				self.job.state = "Stopped";
 				self.job = job;
 				self.comm.setLoggerFactory(self.job.getLoggerFactroy());
 
 	def shutdown(self):
 		self.shutdownRequest.set();
-		self._runningLock.acquire();
-		self._runningLock.release();
+		self.join();
+		# self._runningLock.acquire();
+		# self._runningLock.release();
 
 
 @JsonType(saveThese=["name", "spoolId", "printBedPlaneRange", "printHeadRange", "commProtocol", "currentJobId"])
@@ -229,6 +236,7 @@ class PrinterObject:
 	def _getThread(self):
 		if self.threadInfo == None:
 			self.threadInfo = PrinterThread(self);
+			self.threadInfo.start();
 		return self.threadInfo;
 	def startJob(self):
 		job = self.getCurrentJob();
@@ -273,7 +281,7 @@ class JobObject:
 		self.estimatedTime = 0.0; # In Seconds;
 		self.startedTime = None; # Time Stamp ?
 		self.fileOffset = 0; # Current Spot in file
-		self.logfile = "log-" + str(uuid()) + ".txt";
+		self.logfile = "logs/log-" + str(uuid()) + ".txt";
 		self.state = "New"; # "New", "Stopped", "Paused", "Running", "Waiting", "Done", etc.
 		self._loggerFactory = None;
 		self._gcodeFileRef = None;
@@ -285,7 +293,7 @@ class JobObject:
 		self._dataBase = dataBase;
 	def log(self, text):
 		if self._jobLogger == None:
-			self._jobLogger = getLoggerFactroy().buildLogger("JobObject");
+			self._jobLogger = self.getLoggerFactroy().buildLogger("JobObject");
 		self._jobLogger.log(text)
 	def getLoggerFactroy(self):
 		if self._loggerFactory != None:
@@ -294,6 +302,7 @@ class JobObject:
 			self._loggerFactory = FileLoggerFactory(self.logfile);
 		else:
 			self._loggerFactory = NullLoggerFactory();
+		return self._loggerFactory;
 	def getPrinter(self):
 		if self._dataBase != None:
 			return self._dataBase.getPrinter(self.printerId);
@@ -301,26 +310,30 @@ class JobObject:
 			return None;
 	def getNextCommand(self):
 		if self.gcodeFilePath == None:
+			self.log ("No Gcode File")
 			return None;
 		if self._gcodeFileRef == None:
+			self.log ("Opening Gcode File")
 			self._gcodeFileRef = open(self.gcodeFilePath, "r");
 			self._gcodeFileRef.seek(0, 2);
 			self._fileSize = self._gcodeFileRef.tell();
 			self._gcodeFileRef.seek(self.fileOffset);
-		l = self._gcodeFileRef.readLine();
+		l = self._gcodeFileRef.readline();
 		while l != '':
+			#print("Read From File: " + l.strip())
 			commentPos = l.find(";");
 			comment = None
 			if(commentPos > -1):
 				comment = l[commentPos+1:].strip();
+				self.log("Found G-Code Comment: " + comment);
 				l = l[:commentPos];
-			l = l.strip();
-			if(len(l) > 0 or comment != None):
+			if(len(l.strip()) > 0 ):
 				#self.mLines += [{"cmd":l, "comment":comment, "line":lineCounter}]; 
-				self.fileOffset = f.tell();
-				return l;
+				self.fileOffset = self._gcodeFileRef.tell();
+				return l.strip();
 			self.linesProcessed += 1
-			l = f.readline();
+			l = self._gcodeFileRef.readline();
+			self.fileOffset = self._gcodeFileRef.tell();
 		return None;
 	def shutdown():
 		return ;

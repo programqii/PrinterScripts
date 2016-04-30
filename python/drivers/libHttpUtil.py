@@ -1,7 +1,7 @@
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 from libUtils import toJsonString, fromJsonString
 import re
-
+import json
 mimeTypes = {
 	".json":"application/json",
 	".pdf":"application/pdf",
@@ -43,14 +43,17 @@ mimeTypes = {
 def parseFormData(body, headers):
 	if headers["content-type"].split(';')[0] != "multipart/form-data":
 		return None;
-	boundry = headers["content-type"].split('; boundry=')[1];
+	boundry = headers["content-type"].split('; boundary=')[1];
 	ret = {}
-	for i in body.split(boundry + "\n")[1:-1]: #Beginning Should be "" and ending should be "--"
-		contentStart = re.search(r'\n\n', i).start() + 2;
+	l = body.split("--" +boundry)[1:-1];
+	for m in l: #Beginning Should be "" and ending should be "--"
+		i = m[2:-2]
+		contentStart = re.search(r'\r\n\r\n', i).start() + 2;
 		name = "";
 		headers = {};
-		for k in i[:(contentStart-2)].split("\n"): #Header Lines
-			headerName = re.match(r'[^:]*: ', k)[:-2];
+		for k in i[:(contentStart-2)].split("\r\n"): #Header Lines
+			headerName = re.match(r'[^:]*: ', k).group(0)[:-2];
+			print ("Found Header: " + headerName)
 			headers[headerName] = k[(len(headerName) +2):];
 			if headerName == "Content-Disposition":
 				for m in k[(len(headerName) +2):].split("; ")[1:]:
@@ -102,15 +105,18 @@ class RequestHandler:
 				for i in headers:
 					print ("\t" + i + " == " + headers[i]);
 				if body != None:
-					print ("Request body: ");
-					print (body)
+					if len(body) < 500:
+						print ("Request body: ");
+						print (body)
+					else:
+						print ("Request body Size: " + str(len(body)) + " Bytes");				
 				return endPoint["callBack"](method, url, body, headers, m);
 		return None;
 	def endpoint(self, method, urlExpr):
 		if isinstance(urlExpr, str):
 			Regex = re.sub(r'\{[^}]*\}', r'([^/][^/]*)', urlExpr);
 			# print (method+ " Endpoint Regex: " + Regex );
-			pathRegex = re.compile(Regex);
+			pathRegex = re.compile('^'+Regex+'$');
 		else:
 			pathRegex = urlExpr;
 		def decoratorHandler(func): #TODO: Incorporate "Key Names" so that the URL Can retrun a Map of Path variables

@@ -1,4 +1,6 @@
 
+import time
+import datetime
 
 # globalLoggerFactory = LoggerFactory();
 # def buildLogger(tag):
@@ -19,7 +21,7 @@ class FileLoggerFactory:
 		self.mLogger.logInfo("");
 		self.mLogger.logInfo("----------- Init FileLoggerFactory --------");
 	def buildLogger(self, tag):
-		return FileLogger(self, tag, self.mFileHandle);
+		return FileLogger(tag, self.mFileHandle);
 	def __del__(self):
 		if self.mFileHandle != None:
 			self.mFileHandle.flush();
@@ -54,7 +56,7 @@ class ConsoleLogger: #Prints Messages to Stdout
 class FileLogger:
 	def __init__(self, tag, logFileHandle=None):
 		self.tag = tag;
-		self.logFileHandle = logFileHandle;
+		self.mFileHandle = logFileHandle;
 	def log(self, message, level=""):
 		if message == None:
 			return;

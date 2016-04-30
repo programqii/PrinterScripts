@@ -129,7 +129,7 @@ def getPrinterStatus(method, url, body, headers, matchObject):
 	elif printer.getCurrentJob() == None:
 		return errorMessageResponse(500, "No Job Currently Assigned to printer \"{0}\"".format(printerId))
 	if printer.startJob():
-		return ApiResponse(200, jsonBody={});
+		return ApiResponse(200, jsonBody={"jobId": printer.currentJobId, "job":printer.getCurrentJob()});
 	else:
 		return errorMessageResponse(500, "Error Starting Job (Please Check Logs)".format(printerId))
 @apiHandler.endpoint("POST", "/api/printer/{id}/stop")
@@ -141,7 +141,7 @@ def stopPrinter(method, url, body, headers, matchObject):
 	elif printer.getCurrentJob() == None:
 		return errorMessageResponse(500, "No Job Currently Assigned to printer \"{0}\"".format(printerId))
 	if printer.stopJob():
-		return ApiResponse(200, jsonBody={});
+		return ApiResponse(200, jsonBody={"jobId": printer.currentJobId, "job":printer.getCurrentJob()});
 	else:
 		return errorMessageResponse(500, "Error Stopping Job (Please Check Logs)".format(printerId))
 @apiHandler.endpoint("POST", "/api/printer/{id}/pause")
@@ -153,7 +153,7 @@ def pausePrinter(method, url, body, headers, matchObject):
 	elif printer.getCurrentJob() == None:
 		return errorMessageResponse(500, "No Job Currently Assigned to printer \"{0}\"".format(printerId))
 	if printer.pauseJob():
-		return ApiResponse(200, jsonBody={});
+		return ApiResponse(200, jsonBody={"jobId": printer.currentJobId, "job":printer.getCurrentJob()});
 	else:
 		return errorMessageResponse(500, "Error Pausing Job (Please Check Logs)".format(printerId))
 @apiHandler.endpoint("POST", "/api/printer/{id}/rawGcode")
@@ -214,27 +214,43 @@ def getJobLog(method, url, body, headers, matchObject):
 	return ApiResponse();
 @apiHandler.endpoint("POST", "/api/job/{id}/gcode") #Submit GCode To Job
 def setJobGcode(method, url, body, headers, matchObject):
-	response = errorMessageResponse(500, "Unrecognized Parameters")
-	f = open("./gcode/forJob-" + matchObject.group(1) +".gcode", "w" );
+	job = _dataBase.getJob(matchObject.group(1));
+	fileName= "./gcode/forJob-" + matchObject.group(1) +".gcode"
+	if job == None:
+		return errorMessageResponse(404, "Cannot find Job {0}".format(matchObject.group(1)));
+
 	contentType = headers["content-type"].split(';')[0];
 	if(contentType == "application/json"):
 		data = json.loads(body);
 		if "rawData" in data:
-			f.write(data["rawData"]);
-			response = ApiResponse(code=200)
+			with open(fileName, "w" ) as f:
+				f.write(data["rawData"]);
+				job.gcodeFilePath = fileName;
+				return ApiResponse(code=200)
 		elif "gcodeList" in data:
-			for g in data["gcodeList"]:
-				f.write(g + "\n");
-			response = ApiResponse(code=200);
+			with open(fileName, "w" ) as f:
+				for g in data["gcodeList"]:
+					f.write(g + "\n");
+				job.gcodeFilePath = fileName;
+				return ApiResponse(code=200);
 	elif (contentType == "application/x-www-form-urlencoded"):
-		f.write(body); #TODO: properly Decode this to recieve a file
+		with open(fileName, "w" ) as f:
+			f.write(body); #TODO: properly Decode this to recieve a file
+			job.gcodeFilePath = fileName;
+			return ApiResponse(code=200);
 	elif (contentType == "multipart/form-data"):
 		data = parseFormData(body, headers);
 		if data != None:
 			if "file" in data:
-				f.write(data["file"]["data"]);
-	f.close();
-	return response;
+				with open(fileName, "w" ) as f:
+					f.write(data["file"]["data"]);
+					job.gcodeFilePath = fileName;
+					return ApiResponse(code=200);
+			else:
+				return errorMessageResponse(500, "Missing 'file' parameter")
+		else:
+			return errorMessageResponse(500, "Could Not parse Form")
+	return errorMessageResponse(500, "Unrecognized Parameters");
 @apiHandler.endpoint("DELETE", "/api/job/{id}")
 def deleteJobInfo(method, url, body, headers, matchObject):
 	return ApiResponse(code=(200 if getDataBase().deleteJob() else 500));

@@ -1,19 +1,6 @@
 {
     "__type": "SimplePrinterDB",
     "jobs": {
-        "job-b4374507-0847-11e6-ac26-f45c898f3b77": {
-            "__type": "JobObject",
-            "estimatedTime": 0.0,
-            "fileOffset": 0,
-            "gcodeFilePath": null,
-            "linesProcessed": 0,
-            "logfile": "log-b438034c-0847-11e6-ba37-f45c898f3b77.txt",
-            "name": "",
-            "printerId": null,
-            "progress": 0.0,
-            "startedTime": null,
-            "state": "New"
-        }
     },
     "printers": {
         "printer-af5742ca-083d-11e6-bbfc-f45c898f3b77": {
@@ -62,7 +49,8 @@
         "printer-b6eb9e23-0846-11e6-b3b2-f45c898f3b77": {
             "__type": "PrinterObject",
             "commProtocol": {
-                "__type": "MockComPortWrapper"
+                "__type": "MarlinPrinterProtocol",
+                "mCommPort": null
             },
             "currentJobId": null,
             "name": "Dummy Printer",
@@ -150,10 +138,13 @@
         "printer-b9cf5eb3-0846-11e6-b2bd-f45c898f3b77": {
             "__type": "PrinterObject",
             "commProtocol": {
-                "__type": "ComPortWrapper",
-                "mBaud": 115200,
-                "mPort": "/dev/ttyACM0",
-                "mTimeout": 0.5
+                "__type": "MarlinPrinterProtocol",
+                "mCommPort": {
+                    "__type": "ComPortWrapper",
+                    "mBaud": 115200,
+                    "mPort": "/dev/ttyACM0",
+                    "mTimeout": 0.5
+                }
             },
             "currentJobId": null,
             "name": "Printer With real Com-port",

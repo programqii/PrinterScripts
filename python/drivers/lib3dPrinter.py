@@ -2,14 +2,14 @@ import sys
 import json
 import datetime
 from libUtils import mapPath, parseWithTypes, JsonType
-from libComms import parseCommPort
+from libComms import parseCommPort, ComPortWrapper
 
 def parsePrinterProtocol(jsonNode):
 	return parseWithTypes(jsonNode, MarlinPrinterProtocol);
 # Sends G-Code & recieves / Interprets Reponses
 @JsonType(saveThese=["mCommPort"])
 class MarlinPrinterProtocol:
-	def __init__(self, commPort):
+	def __init__(self, commPort=None):
 		self.mCommPort = commPort;
 		self.errors = [];
 		self.logger = None;
@@ -18,17 +18,25 @@ class MarlinPrinterProtocol:
 			self.logger(text);
 	def setLoggerFactory(self, loggerFactory):
 		self.logger = loggerFactory.buildLogger("lib3dPrinter.py->MarlinPrinterProtocol");
-		self.mCommPort.setLoggerFactory(loggerFactory);
+		if self.mCommPort != None:
+			self.mCommPort.setLoggerFactory(loggerFactory);
 	def isOpen(self):
-		return self.mCommPort.isOpen();
+		if self.mCommPort != None:
+			return self.mCommPort.isOpen();
+		else:
+			return False;
 	def open(self):
-		self.mCommPort.open();
-		self.printResponse();
-		self.sendCmd("M105"); # Read Current Temp (to make sure that The Serial Buffer is clean)
+		if self.mCommPort != None:
+			self.mCommPort.open();
+			self.printResponse();
+			self.sendCmd("M105"); # Read Current Temp (to make sure that The Serial Buffer is clean)
 	def close(self):
-		self.mCommPort.close();
+		if self.mCommPort != None:
+			self.mCommPort.close();
 	def printResponse(self):
 		lines = [];
+		if self.mCommPort == None:
+			return [];
 		while True:
 			s = self.mCommPort.readline();
 			if s == '':
@@ -38,6 +46,8 @@ class MarlinPrinterProtocol:
 			return lines;
 	def readUntilOkOrError(self):
 		lines = [];
+		if self.mCommPort == None:
+			return {"ok": False, "data": lines}
 		while True:
 			s = self.mCommPort.readline();
 			if s.find(":") > -1:
@@ -52,9 +62,11 @@ class MarlinPrinterProtocol:
 			if tag.lower() == "error":
 				return {"ok": False, "data": lines};
 	def sendCmd(self, cmd):
-		self._log("Sending Command: " + cmd);
-		self.mCommPort.write(cmd + "\n");
+		if self.mCommPort != None:
+			self._log("Sending Command: " + cmd);
+			self.mCommPort.write(cmd + "\n");
 		return self.readUntilOkOrError();
+
 	def emergencyStop(self):
 		self._log("Sending E-Stop Commands");
 		self.sendCmd("M18");
