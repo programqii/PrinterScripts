@@ -28,7 +28,7 @@ class ConsoleLoggerFactory:
 		self.mLogger.logInfo("");
 		self.mLogger.logInfo("----------- Init ConsoleLoggerFactory --------");
 	def buildLogger(self, tag):
-		return ConsoleLogger(self);
+		return ConsoleLogger(self, tag);
 class FileLoggerFactory:
 	def __init__(self, fileName="logFile.txt"):
 		self.mLogFileName = fileName;
