@@ -1,7 +1,6 @@
 {
     "__type": "SimplePrinterDB",
-    "jobs": {
-    },
+    "jobs": {},
     "printers": {
         "printer-af5742ca-083d-11e6-bbfc-f45c898f3b77": {
             "__type": "PrinterObject",
@@ -185,9 +184,8 @@
                 }
             ],
             "spoolId": null
-        }
-    },
-    "printer-kevins-printer": {
+        },
+        "printer-kevins-printer": {
             "__type": "PrinterObject",
             "commProtocol": {
                 "__type": "MarlinPrinterProtocol",
